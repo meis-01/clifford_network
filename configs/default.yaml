@@ -1,0 +1,20 @@
+data:
+  root: data
+  labels_dir: data/labels
+
+splits:
+  train_fraction: 0.7
+  val_fraction: 0.15
+  seed: 7
+
+reconstruction:
+  kernel_size: [5, 5]
+
+training:
+  batch_size: 4
+  learning_rate: 0.001
+  epochs: 10
+
+experiments:
+  enabled: false
+  experiment_name: fastmri-prostate
