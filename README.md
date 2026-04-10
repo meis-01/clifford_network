@@ -12,7 +12,15 @@ Minimal scaffold for a fastMRI prostate classification pipeline with modular dat
 
 ## Quick start
 
-Install the Python dependencies listed in `requirements.txt`, then run:
+Create or activate your environment, then install the project from the repository root:
+
+```powershell
+pip install -e .
+```
+
+If you prefer installing from the raw dependency list instead, you can still use `requirements.txt`.
+
+After installation, run:
 
 ```powershell
 c:/Users/meisa/Projects/clifford_network/.venv/Scripts/python.exe main.py --smoke-test
