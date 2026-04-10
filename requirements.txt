@@ -7,3 +7,4 @@ bokeh>=3.4
 torch>=2.4
 mlflow>=2.16
 scikit-image>=0.22
+scikit-learn>=1.5
