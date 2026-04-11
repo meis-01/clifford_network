@@ -30,9 +30,11 @@ DEFAULT_CONFIG: dict[str, Any] = {
         },
     },
     "features": {
+        "domain": "kspace",
+        "representation": "real",
         "output_size": [224, 224],
         "kernel_size": [5, 5],
-        "coil_reduction": "rss",
+        "coil_combination": "sense",
         "average_reduction": "mean",
         "log_scale": True,
         "normalization": "zscore",
@@ -103,6 +105,11 @@ def load_config(config_path: str | Path) -> dict[str, Any]:
 
     features_config["cache_dir"] = _resolve_optional_path(features_config.get("cache_dir"), base_dir)
     training_config["output_dir"] = _resolve_optional_path(training_config["output_dir"], base_dir)
+    features_config["domain"] = str(features_config["domain"]).lower()
+    features_config["representation"] = str(features_config["representation"]).lower()
+    features_config["coil_combination"] = str(features_config["coil_combination"]).lower()
+    features_config["average_reduction"] = str(features_config["average_reduction"]).lower()
+    features_config["normalization"] = str(features_config["normalization"]).lower()
     features_config["output_size"] = tuple(int(value) for value in features_config["output_size"])
     features_config["kernel_size"] = tuple(int(value) for value in features_config["kernel_size"])
 

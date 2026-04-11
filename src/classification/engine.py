@@ -56,7 +56,8 @@ def run_epoch(
             optimizer.zero_grad(set_to_none=True)
 
         autocast_device = "cuda" if device.type == "cuda" else "cpu"
-        with torch.amp.autocast(device_type=autocast_device, enabled=amp_enabled):
+        use_autocast = amp_enabled and not torch.is_complex(images)
+        with torch.amp.autocast(device_type=autocast_device, enabled=use_autocast):
             logits = model(images)
             loss = criterion(logits, labels)
 

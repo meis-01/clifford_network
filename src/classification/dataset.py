@@ -7,7 +7,7 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader, Dataset
 
-from src.classification.features import extract_paired_kspace_channels
+from src.classification.features import extract_paired_input_channels
 from src.classification.manifest import split_manifest
 
 
@@ -34,7 +34,7 @@ class PairedKspaceDataset(Dataset):
 
     def __getitem__(self, index: int) -> dict[str, Any]:
         row = self.manifest.iloc[index]
-        image = extract_paired_kspace_channels(
+        image = extract_paired_input_channels(
             t2_path=row["t2_path"],
             dwi_path=row["dwi_path"],
             slice_index=int(row["slice_index"]),

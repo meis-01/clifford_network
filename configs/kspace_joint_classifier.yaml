@@ -1,0 +1,38 @@
+data:
+  t2_labels_csv: data/labels/t2_slice_level_labels.csv
+  dwi_labels_csv: data/labels/dwi_slice_level_labels.csv
+  t2_root: data
+  dwi_root: data
+  positive_threshold: 2
+  allow_label_disagreement: true
+  drop_missing: true
+
+features:
+  domain: kspace
+  representation: real
+  output_size: [224, 224]
+  kernel_size: [5, 5]
+  coil_combination: sense
+  average_reduction: mean
+  log_scale: true
+  normalization: zscore
+  cache_dir: temp/kspace_channel_cache
+  t2_average_indices: null
+  dwi_average_indices: null
+
+model:
+  channels: [32, 64, 128, 256]
+  dropout: 0.30
+
+training:
+  batch_size: 4
+  num_workers: 0
+  epochs: 20
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  patience: 5
+  monitor: val_auc
+  device: auto
+  amp: true
+  seed: 7
+  output_dir: runs/kspace_real_classifier

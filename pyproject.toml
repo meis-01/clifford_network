@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "clifford-network"
+version = "0.1.0"
+description = "fastMRI prostate reconstruction and modeling scaffold"
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=2.0",
+    "pandas>=2.2",
+    "h5py>=3.10",
+    "PyYAML>=6.0",
+    "holoviews>=1.19",
+    "bokeh>=3.4",
+    "torch>=2.4",
+    "mlflow>=2.16",
+    "scikit-learn>=1.5",
+]
+
+[tool.setuptools]
+include-package-data = false
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]

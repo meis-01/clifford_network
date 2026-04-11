@@ -10,12 +10,13 @@ from src.classification.config import load_config
 from src.classification.dataset import build_dataloaders
 from src.classification.engine import build_pos_weight, run_epoch
 from src.classification.manifest import build_paired_manifest, split_manifest
-from src.classification.model import KSpaceClassifier
+from src.classification.features import get_input_channels
+from src.classification.model import build_classifier
 from src.classification.utils import ensure_output_dir, resolve_device, save_json, set_seed
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Train a paired T2/DWI k-space classifier.")
+    parser = argparse.ArgumentParser(description="Train a paired T2/DWI classifier across k-space or reconstruction domains.")
     parser.add_argument("--config", type=Path, required=True, help="Path to the YAML config file.")
     return parser
 
@@ -49,8 +50,10 @@ def main() -> None:
     pos_weight = build_pos_weight(train_manifest["label"].to_numpy())
 
     device = resolve_device(training_config["device"])
-    model = KSpaceClassifier(
-        in_channels=2,
+    use_complex_representation = str(config["features"]["representation"]).lower() == "complex"
+    model = build_classifier(
+        representation=config["features"]["representation"],
+        in_channels=get_input_channels(config["features"]),
         channels=config["model"]["channels"],
         dropout=float(config["model"]["dropout"]),
     ).to(device)
@@ -61,7 +64,9 @@ def main() -> None:
         lr=float(training_config["learning_rate"]),
         weight_decay=float(training_config["weight_decay"]),
     )
-    scaler = torch.amp.GradScaler(enabled=bool(training_config["amp"]) and device.type == "cuda")
+    scaler = torch.amp.GradScaler(
+        enabled=bool(training_config["amp"]) and device.type == "cuda" and not use_complex_representation
+    )
 
     best_metric_name = str(training_config["monitor"])
     best_metric_value = float("inf") if best_metric_name == "val_loss" else float("-inf")
@@ -78,7 +83,7 @@ def main() -> None:
             criterion=criterion,
             optimizer=optimizer,
             scaler=scaler,
-            amp_enabled=bool(training_config["amp"]) and device.type == "cuda",
+            amp_enabled=bool(training_config["amp"]) and device.type == "cuda" and not use_complex_representation,
         )
         val_result = run_epoch(model, loaders["val"], device=device, criterion=criterion)
 

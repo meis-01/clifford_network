@@ -1,0 +1,29 @@
+features:
+  domain: reconstruction
+  representation: real
+  output_size: [224, 224]
+  kernel_size: [5, 5]
+  coil_combination: sense
+  average_reduction: mean
+  log_scale: true
+  normalization: zscore
+  cache_dir: temp/reconstruction_channel_cache
+  t2_average_indices: null
+  dwi_average_indices: null
+
+model:
+  channels: [32, 64, 128, 256]
+  dropout: 0.30
+
+training:
+  batch_size: 4
+  num_workers: 0
+  epochs: 20
+  learning_rate: 0.0003
+  weight_decay: 0.0001
+  patience: 5
+  monitor: val_auc
+  device: auto
+  amp: true
+  seed: 7
+  output_dir: runs/reconstruction_real_classifier

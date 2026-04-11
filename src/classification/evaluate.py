@@ -8,13 +8,14 @@ import torch
 from src.classification.config import load_config
 from src.classification.dataset import build_dataloaders
 from src.classification.engine import build_pos_weight, run_epoch
+from src.classification.features import get_input_channels
 from src.classification.manifest import build_paired_manifest, split_manifest
-from src.classification.model import KSpaceClassifier
+from src.classification.model import build_classifier
 from src.classification.utils import ensure_output_dir, resolve_device, save_json
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Evaluate a paired T2/DWI k-space classifier checkpoint.")
+    parser = argparse.ArgumentParser(description="Evaluate a paired T2/DWI classifier checkpoint.")
     parser.add_argument("--config", type=Path, required=True, help="Path to the YAML config file.")
     parser.add_argument("--checkpoint", type=Path, default=None, help="Checkpoint to evaluate. Defaults to output_dir/best_model.pt.")
     parser.add_argument("--split", type=str, default="test", choices=["train", "val", "test"], help="Dataset split to evaluate.")
@@ -39,8 +40,9 @@ def main() -> None:
     criterion = torch.nn.BCEWithLogitsLoss(pos_weight=build_pos_weight(train_manifest["label"].to_numpy()))
 
     device = resolve_device(config["training"]["device"])
-    model = KSpaceClassifier(
-        in_channels=2,
+    model = build_classifier(
+        representation=config["features"]["representation"],
+        in_channels=get_input_channels(config["features"]),
         channels=config["model"]["channels"],
         dropout=float(config["model"]["dropout"]),
     ).to(device)

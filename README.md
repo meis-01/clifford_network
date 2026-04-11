@@ -49,17 +49,29 @@ c:/Users/meisa/Projects/clifford_network/.venv/Scripts/python.exe main.py --conf
 
 ## Paired K-space Classification
 
-The repository now includes a slice-level classifier under `src/classification` that pairs T2 and DWI volumes and converts each slice into a two-channel input:
+The repository now includes a slice-level classifier under `src/classification` that pairs T2 and DWI volumes and can run four experiment modes:
 
-- Channel 1: T2 filled k-space magnitude after GRAPPA and zero-padding.
-- Channel 2: DWI filled k-space magnitude after trapezoidal regridding and GRAPPA.
+- `kspace x real`: two channels, T2 and DWI magnitude from filled k-space.
+- `kspace x complex`: two native complex channels, `T2` and `DWI`, from physically coil-combined filled k-space.
+- `reconstruction x real`: two channels, T2 and DWI magnitude after inverse FFT reconstruction.
+- `reconstruction x complex`: two native complex channels, `T2` and `DWI`, after physically coil-combined reconstruction.
+
+The real-valued variants reduce coils after physical sensitivity-weighted image-domain combination and then take magnitude. The complex variants keep native `torch.complex64` tensors through the convolutional backbone and optimize a real-valued objective with PyTorch's built-in conjugate Wirtinger gradients.
 
 The default loader joins the original fastMRI-style T2 and DWI slice CSVs on `(fastmri_pt_id, slice, data_split)` and expects each row to resolve to a real file via `root / folder / fastmri_rawfile`.
 
-Run training with:
+Run the real k-space baseline with:
 
 ```powershell
 c:/Users/meisa/Projects/clifford_network/.venv/Scripts/python.exe -m src.classification.train --config configs/kspace_joint_classifier.yaml
+```
+
+Run the other experiment variants with:
+
+```powershell
+c:/Users/meisa/Projects/clifford_network/.venv/Scripts/python.exe -m src.classification.train --config configs/kspace_joint_classifier_complex.yaml
+c:/Users/meisa/Projects/clifford_network/.venv/Scripts/python.exe -m src.classification.train --config configs/reconstruction_joint_classifier.yaml
+c:/Users/meisa/Projects/clifford_network/.venv/Scripts/python.exe -m src.classification.train --config configs/reconstruction_joint_classifier_complex.yaml
 ```
 
 Evaluate the best checkpoint with:

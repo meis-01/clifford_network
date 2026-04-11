@@ -11,6 +11,13 @@ import torch.nn.functional as F
 from src.data.mri_data import load_file_T2, load_file_dwi, zero_pad_kspace_hdr
 from src.reconstruction.dwi.regridding import trapezoidal_regridding
 from src.reconstruction.grappa import Grappa
+from src.reconstruction.utils import fftnd, ifftnd
+
+
+SUPPORTED_FEATURE_DOMAINS = {"kspace", "reconstruction"}
+SUPPORTED_FEATURE_REPRESENTATIONS = {"real", "complex"}
+SUPPORTED_COIL_COMBINATIONS = {"sense"}
+SUPPORTED_AVERAGE_REDUCTIONS = {"mean", "max"}
 
 
 def _resize_2d(image: np.ndarray, output_size: tuple[int, int]) -> np.ndarray:
@@ -47,35 +54,121 @@ def _select_averages(kspace: np.ndarray, average_indices: Iterable[int] | None) 
     return kspace[indices, ...]
 
 
-def _collapse_kspace(
-    kspace: np.ndarray,
+def get_input_channels(feature_config: dict) -> int:
+    representation = str(feature_config["representation"]).lower()
+    if representation in {"real", "complex"}:
+        return 2
+    raise ValueError(f"Unsupported feature representation: {representation}")
+
+
+def _validate_feature_config(feature_config: dict) -> None:
+    domain = str(feature_config["domain"]).lower()
+    representation = str(feature_config["representation"]).lower()
+    coil_combination = str(feature_config["coil_combination"]).lower()
+    average_reduction = str(feature_config["average_reduction"]).lower()
+
+    if domain not in SUPPORTED_FEATURE_DOMAINS:
+        raise ValueError(f"Unsupported feature domain: {domain}")
+    if representation not in SUPPORTED_FEATURE_REPRESENTATIONS:
+        raise ValueError(f"Unsupported feature representation: {representation}")
+    if coil_combination not in SUPPORTED_COIL_COMBINATIONS:
+        raise ValueError(f"Unsupported coil combination: {coil_combination}")
+    if average_reduction not in SUPPORTED_AVERAGE_REDUCTIONS:
+        raise ValueError(f"Unsupported average reduction: {average_reduction}")
+
+
+def _coil_images_from_kspace(multicoil_kspace: np.ndarray) -> np.ndarray:
+    images = np.zeros_like(multicoil_kspace, dtype=np.complex64)
+    for average_index in range(multicoil_kspace.shape[0]):
+        images[average_index] = ifftnd(multicoil_kspace[average_index], [1, 2])
+    return images
+
+
+def _estimate_sensitivity_maps(reference_kspace: np.ndarray, eps: float = 1e-8) -> np.ndarray:
+    reference_image = ifftnd(reference_kspace.astype(np.complex64), [1, 2])
+    denominator = np.sqrt(np.sum(np.abs(reference_image) ** 2, axis=0, keepdims=True))
+    denominator = np.maximum(denominator, eps)
+    return reference_image / denominator
+
+
+def _sense_combine(coil_images: np.ndarray, sensitivity_maps: np.ndarray, eps: float = 1e-8) -> np.ndarray:
+    numerator = np.sum(coil_images * sensitivity_maps.conj()[None, ...], axis=1)
+    denominator = np.sum(np.abs(sensitivity_maps) ** 2, axis=0)
+    denominator = np.maximum(denominator, eps)
+    return numerator / denominator[None, ...]
+
+
+def _build_physical_single_channel(
+    multicoil_kspace: np.ndarray,
+    sensitivity_maps: np.ndarray,
+    domain: str,
+) -> np.ndarray:
+    coil_images = _coil_images_from_kspace(multicoil_kspace)
+    combined_image = _sense_combine(coil_images, sensitivity_maps)
+    if domain == "reconstruction":
+        return combined_image.astype(np.complex64)
+
+    combined_kspace = np.stack([fftnd(image, [0, 1]) for image in combined_image], axis=0)
+    return combined_kspace.astype(np.complex64)
+
+
+def _collapse_real_representation(
+    data: np.ndarray,
     output_size: tuple[int, int],
-    coil_reduction: str,
     average_reduction: str,
     log_scale: bool,
     normalization: str,
 ) -> np.ndarray:
-    magnitude = np.abs(kspace)
-    if coil_reduction == "rss":
-        collapsed = np.sqrt(np.sum(np.square(magnitude), axis=1))
-    elif coil_reduction == "mean":
-        collapsed = magnitude.mean(axis=1)
-    else:
-        raise ValueError(f"Unsupported coil reduction: {coil_reduction}")
-
+    magnitude = np.abs(data)
     if average_reduction == "mean":
-        collapsed = collapsed.mean(axis=0)
+        collapsed = magnitude.mean(axis=0)
     elif average_reduction == "max":
-        collapsed = collapsed.max(axis=0)
+        collapsed = magnitude.max(axis=0)
     else:
         raise ValueError(f"Unsupported average reduction: {average_reduction}")
 
-    collapsed = np.fft.fftshift(collapsed, axes=(-2, -1))
     if log_scale:
         collapsed = np.log1p(collapsed)
 
     resized = _resize_2d(collapsed, output_size)
-    return _normalize_channel(resized, normalization)
+    return _normalize_channel(resized, normalization)[None, ...]
+
+
+def _collapse_complex_representation(
+    data: np.ndarray,
+    output_size: tuple[int, int],
+    average_reduction: str,
+    normalization: str,
+) -> np.ndarray:
+    if average_reduction == "mean":
+        collapsed = data.mean(axis=0)
+    else:
+        raise ValueError("Complex-valued averaging currently supports only 'mean' to preserve a valid complex average.")
+
+    real = _normalize_channel(_resize_2d(collapsed.real, output_size), normalization)
+    imag = _normalize_channel(_resize_2d(collapsed.imag, output_size), normalization)
+    return (real + 1j * imag).astype(np.complex64)
+
+
+def _represent_volume(filled_data: np.ndarray, feature_config: dict) -> np.ndarray:
+    _validate_feature_config(feature_config)
+    representation = feature_config["representation"]
+
+    if representation == "real":
+        return _collapse_real_representation(
+            filled_data,
+            output_size=feature_config["output_size"],
+            average_reduction=feature_config["average_reduction"],
+            log_scale=bool(feature_config["log_scale"]),
+            normalization=feature_config["normalization"],
+        )
+
+    return _collapse_complex_representation(
+        filled_data,
+        output_size=feature_config["output_size"],
+        average_reduction=feature_config["average_reduction"],
+        normalization=feature_config["normalization"],
+    )
 
 
 def _compute_t2_filled_kspace(volume_path: str, slice_index: int, kernel_size: tuple[int, int]) -> np.ndarray:
@@ -96,8 +189,8 @@ def _compute_t2_filled_kspace(volume_path: str, slice_index: int, kernel_size: t
     return np.stack(filled, axis=0)
 
 
-def _compute_dwi_filled_kspace(volume_path: str, slice_index: int, kernel_size: tuple[int, int]) -> np.ndarray:
-    kspace, calibration_data, _, hdr = load_file_dwi(volume_path)
+def _compute_dwi_filled_kspace(volume_path: str, slice_index: int, kernel_size: tuple[int, int]) -> tuple[np.ndarray, np.ndarray]:
+    kspace, calibration_data, coil_sens_maps, hdr = load_file_dwi(volume_path)
     calibration_slice = trapezoidal_regridding(calibration_data[slice_index, ...], hdr)
     reference = trapezoidal_regridding(kspace[0, slice_index, ...], hdr)
     grappa = Grappa(np.transpose(reference, (2, 0, 1)), kernel_size=kernel_size, coil_axis=1)
@@ -110,7 +203,7 @@ def _compute_dwi_filled_kspace(volume_path: str, slice_index: int, kernel_size: 
         post_grappa = np.moveaxis(np.moveaxis(post_grappa, 0, 1), 1, 2)
         filled.append(post_grappa)
 
-    return np.stack(filled, axis=0)
+    return np.stack(filled, axis=0), coil_sens_maps[slice_index, ...].astype(np.complex64)
 
 
 def _extract_channel(
@@ -131,26 +224,30 @@ def _extract_channel(
     if modality == "t2":
         filled_kspace = _compute_t2_filled_kspace(volume_path, slice_index, feature_config["kernel_size"])
         average_indices = feature_config.get("t2_average_indices")
+        selected_kspace = _select_averages(filled_kspace, average_indices)
+        reference_kspace = selected_kspace.mean(axis=0)
+        sensitivity_maps = _estimate_sensitivity_maps(reference_kspace)
     elif modality == "dwi":
-        filled_kspace = _compute_dwi_filled_kspace(volume_path, slice_index, feature_config["kernel_size"])
+        filled_kspace, sensitivity_maps = _compute_dwi_filled_kspace(volume_path, slice_index, feature_config["kernel_size"])
         average_indices = feature_config.get("dwi_average_indices")
+        selected_kspace = _select_averages(filled_kspace, average_indices)
     else:
         raise ValueError(f"Unsupported modality: {modality}")
 
-    channel = _collapse_kspace(
-        _select_averages(filled_kspace, average_indices),
-        output_size=feature_config["output_size"],
-        coil_reduction=feature_config["coil_reduction"],
-        average_reduction=feature_config["average_reduction"],
-        log_scale=bool(feature_config["log_scale"]),
-        normalization=feature_config["normalization"],
-    )
+    physical_volume = _build_physical_single_channel(selected_kspace, sensitivity_maps, feature_config["domain"])
+    channel = _represent_volume(physical_volume, feature_config)
     if cache_path is not None:
         np.save(cache_path, channel)
     return channel
 
 
-def extract_paired_kspace_channels(t2_path: str, dwi_path: str, slice_index: int, feature_config: dict) -> np.ndarray:
+def extract_paired_input_channels(t2_path: str, dwi_path: str, slice_index: int, feature_config: dict) -> np.ndarray:
     t2_channel = _extract_channel("t2", t2_path, slice_index, feature_config)
     dwi_channel = _extract_channel("dwi", dwi_path, slice_index, feature_config)
-    return np.stack([t2_channel, dwi_channel], axis=0).astype(np.float32)
+    if str(feature_config["representation"]).lower() == "complex":
+        return np.stack([t2_channel, dwi_channel], axis=0).astype(np.complex64)
+    return np.concatenate([t2_channel, dwi_channel], axis=0).astype(np.float32)
+
+
+def extract_paired_kspace_channels(t2_path: str, dwi_path: str, slice_index: int, feature_config: dict) -> np.ndarray:
+    return extract_paired_input_channels(t2_path, dwi_path, slice_index, feature_config)
