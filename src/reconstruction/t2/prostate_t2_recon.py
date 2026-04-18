@@ -6,7 +6,7 @@ from src.reconstruction.utils import center_crop_im, ifftnd
 from src.reconstruction.grappa import Grappa
 
 
-def t2_reconstruction(kspace_data: np.ndarray, calib_data: np.ndarray, hdr: str) -> np.ndarray:
+def t2_reconstruction(kspace_data: np.ndarray, calib_data: np.ndarray, hdr: str|bytes) -> np.ndarray:
     """
     Perform T2-weighted image reconstruction using GRAPPA technique.
 
@@ -16,7 +16,7 @@ def t2_reconstruction(kspace_data: np.ndarray, calib_data: np.ndarray, hdr: str)
         Input k-space data with shape (num_aves, num_slices, num_coils, num_ro, num_pe)
     calib_data: numpy.ndarray
         Calibration data for GRAPPA with shape (num_slices, num_coils, num_pe_cal)
-    hdr: str
+    hdr: str or bytes
          The XML header string.
          
     Returns:
@@ -26,56 +26,42 @@ def t2_reconstruction(kspace_data: np.ndarray, calib_data: np.ndarray, hdr: str)
     """
     num_avg, num_slices, num_coils, num_ro, num_pe = kspace_data.shape
     
-    # Calib_data shape: num_slices, num_coils, num_pe_cal
-    grappa_weight_dict = {}
-    grappa_weight_dict_2 = {}
-
-    kspace_slice_regridded = kspace_data[0, 0, ...]
-    grappa_obj = Grappa(np.transpose(kspace_slice_regridded, (2, 0, 1)), kernel_size=(5, 5), coil_axis=1)
-
-    kspace_slice_regridded_2 = kspace_data[1, 0, ...]
-    grappa_obj_2 = Grappa(np.transpose(kspace_slice_regridded_2, (2, 0, 1)), kernel_size=(5, 5), coil_axis=1)
     
-    # calculate GRAPPA weights
-    for slice_num in range(num_slices):
-        calibration_regridded = calib_data[slice_num, ...]
-        grappa_weight_dict[slice_num] = grappa_obj.compute_weights(
-            np.transpose(calibration_regridded, (2, 0 ,1))
-        )
-        grappa_weight_dict_2[slice_num] = grappa_obj_2.compute_weights(
-            np.transpose(calibration_regridded, (2, 0 ,1))
-        )
-
-    # apply GRAPPA weights
+    # apply GRAPPA weights average-by-average (supports any num_avg >= 1)
     kspace_post_grappa_all = np.zeros(shape=kspace_data.shape, dtype=complex)
     kspace_post_grappa_padded_all = np.zeros(shape=(num_avg, num_slices, num_coils,num_ro, num_ro), dtype=complex)
-    for average, grappa_obj, grappa_weight_dict in zip(
-        [0, 1, 2],
-        [grappa_obj, grappa_obj_2, grappa_obj],
-        [grappa_weight_dict, grappa_weight_dict_2, grappa_weight_dict]
-    ):
+    im = np.zeros((num_avg, num_slices, num_ro, num_ro), dtype=float)
+
+    for average in range(num_avg):
+        grappa_weight_dict: dict[int, np.ndarray] = {}
+
         for slice_num in range(num_slices):
+            calibration_regridded = calib_data[slice_num, ...]
             kspace_slice_regridded = kspace_data[average, slice_num, ...]
+            grappa_obj = Grappa(np.transpose(kspace_slice_regridded, (2, 0, 1)), kernel_size=(5, 5), coil_axis=1)
+            grappa_weight_dict[slice_num] = grappa_obj.compute_weights(
+                np.transpose(calibration_regridded, (2, 0, 1))
+            )
+            
             kspace_post_grappa = grappa_obj.apply_weights(
                 np.transpose(kspace_slice_regridded, (2, 0, 1)),
                 grappa_weight_dict[slice_num]
             )
             kspace_post_grappa_all[average, slice_num, ...] = np.moveaxis(np.moveaxis(kspace_post_grappa, 0, 1), 1, 2)
 
-    # recon image for each average
-    im = np.zeros((num_avg, num_slices, num_ro, num_ro))
-    for average in range(num_avg): 
+        # recon image for each average    
         kspace_grappa = kspace_post_grappa_all[average, ...]
         kspace_grappa_padded = zero_pad_kspace_hdr(hdr, kspace_grappa)
         im[average] = create_coil_combined_im(kspace_grappa_padded)
         kspace_post_grappa_padded_all[average, ...] = kspace_grappa_padded
 
+    # average across averages
     im_3d = np.mean(im, axis = 0) 
-    # center crop image to 320 x 320
+
     img_dict = {}
-    img_dict['reconstruction_rss'] = im_3d#center_crop_im(im_3d, [320, 320])
-    img_dict['reconstruction_kspace'] = kspace_post_grappa_all
-    img_dict['reconstruction_kspace_padded'] = kspace_post_grappa_padded_all
+    img_dict['rss'] = center_crop_im(im_3d, [320, 320])
+    img_dict['kspace'] = kspace_post_grappa_padded_all
+    img_dict['kspace_padded'] = kspace_post_grappa_padded_all
 
     return img_dict
   
@@ -148,5 +134,5 @@ if __name__ == "__main__":
             recon = f["reconstruction_rss"][:]
         except:
             recon = None
-    rec = t2_reconstruction(kspace_data=kspace, calib_data=calib, hdr=ismri)
+    rec = t2_reconstruction(kspace_data=kspace, calib_data=calib, hdr=ismri.decode('utf-8'))  # Decode before passing
     print(rec["reconstruction_rss"].shape, rec["reconstruction_kspace"].shape)

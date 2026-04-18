@@ -1,10 +1,9 @@
 import h5py
 import numpy as np
 import xml.etree.ElementTree as etree
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Sequence
 
-
-def load_file_T2(fname: str) -> Tuple:
+def load_file_T2(fname: str) -> tuple:
     """
     Load T2 fastmri file.
     
@@ -15,7 +14,7 @@ def load_file_T2(fname: str) -> Tuple:
     
     Returns:
     --------
-    Tuple
+    tuple
         A tuple containing the kspace, calibration_data, hdr, im_recon, and attributes of the file.
     """
 
@@ -33,7 +32,7 @@ def load_file_T2(fname: str) -> Tuple:
     return kspace, calibration_data, hdr, im_recon, atts
 
 
-def load_file_dwi(fname: str) -> Tuple:
+def load_file_dwi(fname: str) -> tuple:
     """
     Load DWI fastmri file.
     
@@ -44,7 +43,7 @@ def load_file_dwi(fname: str) -> Tuple:
     
     Returns:
     --------
-    Tuple
+    tuple
         A tuple containing the kspace, calibration_data, hdr, and coil sensitivity maps.
     """
 
@@ -55,19 +54,19 @@ def load_file_dwi(fname: str) -> Tuple:
         #phase_corr = f['phase_correction'][:]
         
         ismrmrd_header = f['ismrmrd_header'][()]
-        hdr = get_regridding_params(ismrmrd_header)
+        hdr = get_regridding_params(ismrmrd_header)  
     
     return kspace, calibration, coil_sens_maps, hdr
 
 
-def get_padding(hdr: str) -> float:
+def get_padding(hdr: str|bytes) -> float:
     """
     Extract the padding value from an XML header string.
 
     Parameters:
     -----------
-    hdr : str
-        The XML header string.
+    hdr : str or bytes
+        The XML header string or bytes.
 
     Returns:
     --------
@@ -76,12 +75,12 @@ def get_padding(hdr: str) -> float:
         max_enc is the maximum phase-encoding dimension.
     """
     et_root = etree.fromstring(hdr)                                                              
-    lims = ["encoding", "encodingLimits", "kspace_encoding_step_1"]                              
-    enc_limits_max = int(et_query(et_root, lims + ["maximum"])) + 1                              
+    lims = ["encoding", "encodingLimits", "kspace_encoding_step_1"]
+    enc_limits_max = int(et_query(et_root, lims + ["maximum"])) + 1
     enc = ["encoding", "encodedSpace", "matrixSize"]                                              
     enc_x = int(et_query(et_root, enc + ["x"]))                                                  
     padding = (enc_x - enc_limits_max)/2                                                         
-    print(f"Readout dimension: {enc_x}, Max phase-encoding dimension: {enc_limits_max}, Padding: {padding}")
+    
     return padding
 
 
@@ -120,7 +119,7 @@ def et_query(root: etree.Element, qlist: Sequence[str], namespace: str = "http:/
     return str(value.text)
 
 
-def zero_pad_kspace_hdr(hdr: str, unpadded_kspace: np.ndarray) -> np.ndarray:
+def zero_pad_kspace_hdr(hdr: str|bytes, unpadded_kspace: np.ndarray) -> np.ndarray:
     """
     Perform zero-padding on k-space data to have the same number of
     points in the x- and y-directions.
@@ -148,7 +147,15 @@ def zero_pad_kspace_hdr(hdr: str, unpadded_kspace: np.ndarray) -> np.ndarray:
     side having an additional zero-padding.
 
     """
-    padding = get_padding(hdr)                                                                    
+    try:
+        padding = get_padding(hdr)
+    except RuntimeError:
+        # Minimal headers may omit encodingLimits. Fall back to matching encoded readout size.
+        et_root = etree.fromstring(hdr)
+        enc_x = int(et_query(et_root, ["encoding", "encodedSpace", "matrixSize", "x"]))
+        current_phase = int(unpadded_kspace.shape[-1])
+        padding = (enc_x - current_phase) / 2
+
     if padding%2 != 0:
         padding_left = int(np.floor(padding))                                                    
         padding_right = int(np.ceil(padding))
@@ -160,14 +167,14 @@ def zero_pad_kspace_hdr(hdr: str, unpadded_kspace: np.ndarray) -> np.ndarray:
     return padded_kspace
 
 
-def get_regridding_params(hdr: str) -> Dict:
+def get_regridding_params(hdr: str|bytes) -> dict:
     """
     Extracts regridding parameters from header XML string.
 
     Parameters
     ----------
-    hdr : str
-        Header XML string.
+    hdr : str or bytes
+        The XML header string or bytes.
 
     Returns
     -------
@@ -193,7 +200,7 @@ def get_regridding_params(hdr: str) -> Dict:
     return res
 
 
-def save_recon(outp_dict: Dict[str, any], output_path: str) -> None:
+def save_recon(outp_dict: dict[str, any], output_path: str) -> None:
     """
     Save reconstruction results to an HDF5 file.
 
@@ -212,4 +219,23 @@ def save_recon(outp_dict: Dict[str, any], output_path: str) -> None:
     hf = h5py.File(output_path, "w")
     for key, outp in outp_dict.items():
         hf.create_dataset(key, data=outp)
-    hf.close()  
+    hf.close()
+
+def compress_over_coils(kspace, k=8):
+    """
+    kspace: complex ndarray of shape (A, S, C, Nx, Ny)
+    returns: compressed kspace of shape (A, S, k, Nx, Ny)
+    """
+    A, S, C, Nx, Ny = kspace.shape
+
+    # ----- estimate one coil basis from all acquisitions+slices -----
+    X = kspace.transpose(2, 0, 1, 3, 4).reshape(C, -1)   # (C, A*S*Nx*Ny)
+
+    U, _, _ = np.linalg.svd(X, full_matrices=False)
+    Uk = U[:, :k]   # (C, k)
+
+    # ----- apply projection on coil axis only -----
+    # (A,S,C,Nx,Ny) x (C,k) -> (A,S,k,Nx,Ny)
+    kspace_c = np.einsum('ck,ascxy->askxy', np.conj(Uk), kspace)
+
+    return kspace_c

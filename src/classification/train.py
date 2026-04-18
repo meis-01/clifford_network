@@ -10,7 +10,7 @@ from src.classification.config import load_config
 from src.classification.dataset import build_dataloaders
 from src.classification.engine import build_pos_weight, run_epoch
 from src.classification.manifest import build_paired_manifest, split_manifest
-from src.classification.features import get_input_channels
+from src.classification.features import build_train_quantile_stats, get_input_channels
 from src.classification.model import build_classifier
 from src.classification.utils import ensure_output_dir, resolve_device, save_json, set_seed
 
@@ -27,9 +27,9 @@ def _is_better(metric_name: str, current_value: float, best_value: float) -> boo
     return current_value > best_value
 
 
-def main() -> None:
-    args = build_parser().parse_args()
-    config = load_config(args.config)
+def run_training(config_path: str | Path) -> None:
+    config_path = Path(config_path)
+    config = load_config(config_path)
     training_config = config["training"]
     output_dir = ensure_output_dir(training_config["output_dir"])
     set_seed(int(training_config["seed"]))
@@ -40,13 +40,19 @@ def main() -> None:
             "No paired T2/DWI samples were found. Check the configured roots, CSV files, and whether both modalities exist for the same patient/slice pairs."
         )
     manifest.to_csv(output_dir / "paired_manifest.csv", index=False)
-    shutil.copy2(args.config, output_dir / "config.yaml")
 
-    loaders = build_dataloaders(manifest, config)
     train_manifest = split_manifest(manifest, config, "train")
     val_manifest = split_manifest(manifest, config, "val")
     if train_manifest.empty or val_manifest.empty:
         raise RuntimeError("Training requires non-empty train and validation splits in the paired manifest.")
+    if str(config["features"]["normalization"]).lower() == "train_quantile":
+        normalization_stats = build_train_quantile_stats(train_manifest, config["features"])
+        config["features"]["normalization_stats"] = normalization_stats
+        save_json(normalization_stats, output_dir / "normalization_stats.json")
+
+    shutil.copy2(config_path, output_dir / "config.yaml")
+
+    loaders = build_dataloaders(manifest, config)
     pos_weight = build_pos_weight(train_manifest["label"].to_numpy())
 
     device = resolve_device(training_config["device"])
@@ -136,6 +142,11 @@ def main() -> None:
         output_dir / "summary.json",
     )
     save_json({"history": history}, output_dir / "history.json")
+
+
+def main() -> None:
+    args = build_parser().parse_args()
+    run_training(args.config)
 
 
 if __name__ == "__main__":

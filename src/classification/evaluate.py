@@ -8,7 +8,7 @@ import torch
 from src.classification.config import load_config
 from src.classification.dataset import build_dataloaders
 from src.classification.engine import build_pos_weight, run_epoch
-from src.classification.features import get_input_channels
+from src.classification.features import build_train_quantile_stats, get_input_channels
 from src.classification.manifest import build_paired_manifest, split_manifest
 from src.classification.model import build_classifier
 from src.classification.utils import ensure_output_dir, resolve_device, save_json
@@ -33,8 +33,11 @@ def main() -> None:
         raise RuntimeError(
             "No paired T2/DWI samples were found. Check the configured roots, CSV files, and whether both modalities exist for the same patient/slice pairs."
         )
-    loaders = build_dataloaders(manifest, config)
     train_manifest = split_manifest(manifest, config, "train")
+    if str(config["features"]["normalization"]).lower() == "train_quantile":
+        config["features"]["normalization_stats"] = build_train_quantile_stats(train_manifest, config["features"])
+
+    loaders = build_dataloaders(manifest, config)
     if split_manifest(manifest, config, args.split).empty:
         raise RuntimeError(f"The requested split '{args.split}' is empty in the paired manifest.")
     criterion = torch.nn.BCEWithLogitsLoss(pos_weight=build_pos_weight(train_manifest["label"].to_numpy()))

@@ -15,12 +15,32 @@ REQUIRED_PAIRED_COLUMNS = {
     "t2_path",
     "dwi_path",
 }
+SUPPORTED_MODALITIES = {"t2", "dwi"}
 
 
-def _validate_existing_manifest(frame: pd.DataFrame) -> pd.DataFrame:
-    missing = REQUIRED_PAIRED_COLUMNS - set(frame.columns)
+def _configured_modalities(config: dict[str, Any]) -> list[str]:
+    modalities = config.get("features", {}).get("modalities", ["t2", "dwi"])
+    if isinstance(modalities, str):
+        modalities = [modalities]
+    normalized = [str(modality).lower() for modality in modalities]
+    unsupported = set(normalized) - SUPPORTED_MODALITIES
+    if unsupported:
+        raise ValueError(f"Unsupported modalities: {sorted(unsupported)}")
+    if not normalized:
+        raise ValueError("At least one modality must be configured.")
+    return normalized
+
+
+def _required_manifest_columns(modalities: list[str]) -> set[str]:
+    required = {"fastmri_pt_id", "slice", "data_split", "label"}
+    required.update(f"{modality}_path" for modality in modalities)
+    return required
+
+
+def _validate_existing_manifest(frame: pd.DataFrame, modalities: list[str]) -> pd.DataFrame:
+    missing = _required_manifest_columns(modalities) - set(frame.columns)
     if missing:
-        raise ValueError(f"Paired manifest is missing required columns: {sorted(missing)}")
+        raise ValueError(f"Manifest is missing required columns: {sorted(missing)}")
     return frame.copy()
 
 
@@ -55,36 +75,60 @@ def _build_modality_frame(frame: pd.DataFrame, root: Path, prefix: str, config: 
 
 def build_paired_manifest(config: dict[str, Any]) -> pd.DataFrame:
     data_config = config["data"]
+    modalities = _configured_modalities(config)
     manifest_path = data_config["paired_manifest_csv"]
     if manifest_path is not None:
-        paired = _validate_existing_manifest(pd.read_csv(manifest_path))
+        paired = _validate_existing_manifest(pd.read_csv(manifest_path), modalities)
     else:
-        if data_config["t2_labels_csv"] is None or data_config["dwi_labels_csv"] is None:
-            raise ValueError("Either paired_manifest_csv or both modality label CSVs must be configured.")
+        missing_label_csvs = [
+            modality for modality in modalities if data_config[f"{modality}_labels_csv"] is None
+        ]
+        if missing_label_csvs:
+            raise ValueError(
+                "Either paired_manifest_csv or the selected modality label CSVs must be configured. "
+                f"Missing: {missing_label_csvs}"
+            )
 
-        t2_frame = pd.read_csv(data_config["t2_labels_csv"])
-        dwi_frame = pd.read_csv(data_config["dwi_labels_csv"])
-        t2_manifest = _build_modality_frame(t2_frame, data_config["t2_root"], "t2", data_config)
-        dwi_manifest = _build_modality_frame(dwi_frame, data_config["dwi_root"], "dwi", data_config)
+        modality_manifests = {
+            modality: _build_modality_frame(
+                pd.read_csv(data_config[f"{modality}_labels_csv"]),
+                data_config[f"{modality}_root"],
+                modality,
+                data_config,
+            )
+            for modality in modalities
+        }
 
-        paired = t2_manifest.merge(
-            dwi_manifest,
-            on=["fastmri_pt_id", "slice", "data_split"],
-            how="inner",
-            suffixes=("_t2", "_dwi"),
-        )
-        paired["label_disagreement"] = paired["label_t2"] != paired["label_dwi"]
-        if paired["label_disagreement"].any() and not data_config["allow_label_disagreement"]:
-            disagreements = int(paired["label_disagreement"].sum())
-            raise ValueError(f"Found {disagreements} T2/DWI label disagreements in the paired manifest.")
+        if len(modalities) == 1:
+            paired = modality_manifests[modalities[0]]
+        else:
+            paired = modality_manifests[modalities[0]]
+            for modality in modalities[1:]:
+                paired = paired.merge(
+                    modality_manifests[modality],
+                    on=["fastmri_pt_id", "slice", "data_split"],
+                    how="inner",
+                    suffixes=("", f"_{modality}"),
+                )
 
-        paired["label"] = np.maximum(paired["label_t2"], paired["label_dwi"]).astype(np.int64)
-        paired = paired.drop(columns=["label_t2", "label_dwi"])
+            label_columns = [column for column in paired.columns if column == "label" or column.startswith("label_")]
+            if len(label_columns) > 1:
+                label_values = paired.loc[:, label_columns]
+                paired["label_disagreement"] = label_values.nunique(axis=1) > 1
+                if paired["label_disagreement"].any() and not data_config["allow_label_disagreement"]:
+                    disagreements = int(paired["label_disagreement"].sum())
+                    raise ValueError(f"Found {disagreements} label disagreements in the paired manifest.")
+
+                paired["label"] = label_values.max(axis=1).astype(np.int64)
+                paired = paired.drop(columns=[column for column in label_columns if column != "label"])
 
     if data_config["drop_missing"]:
+        path_columns = [f"{modality}_path" for modality in modalities]
+        existing = np.logical_and.reduce(
+            [paired[path_column].map(lambda value: Path(value).exists()) for path_column in path_columns]
+        )
         paired = paired[
-            paired["t2_path"].map(lambda value: Path(value).exists())
-            & paired["dwi_path"].map(lambda value: Path(value).exists())
+            existing
         ].copy()
 
     paired["slice_index"] = paired["slice"].astype(int) - 1

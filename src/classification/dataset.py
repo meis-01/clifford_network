@@ -7,7 +7,7 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader, Dataset
 
-from src.classification.features import extract_paired_input_channels
+from src.classification.features import extract_input_channels
 from src.classification.manifest import split_manifest
 
 
@@ -26,6 +26,7 @@ class PairedKspaceDataset(Dataset):
     def __init__(self, manifest: pd.DataFrame, config: dict[str, Any], split_name: str):
         self.manifest = split_manifest(manifest, config, split_name)
         self.feature_config = config["features"]
+        self.modalities = self.feature_config.get("modalities", ["t2", "dwi"])
         self.split_name = split_name
         self.augment = split_name == "train"
 
@@ -34,9 +35,9 @@ class PairedKspaceDataset(Dataset):
 
     def __getitem__(self, index: int) -> dict[str, Any]:
         row = self.manifest.iloc[index]
-        image = extract_paired_input_channels(
-            t2_path=row["t2_path"],
-            dwi_path=row["dwi_path"],
+        modality_paths = {modality: row[f"{modality}_path"] for modality in self.modalities}
+        image = extract_input_channels(
+            modality_paths=modality_paths,
             slice_index=int(row["slice_index"]),
             feature_config=self.feature_config,
         )

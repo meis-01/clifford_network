@@ -30,14 +30,21 @@ DEFAULT_CONFIG: dict[str, Any] = {
         },
     },
     "features": {
+        "modalities": ["t2", "dwi"],
         "domain": "kspace",
         "representation": "real",
         "output_size": [224, 224],
         "kernel_size": [5, 5],
         "coil_combination": "sense",
+        "coil_compression_channels": None,
+        "average_selection": "all",
         "average_reduction": "mean",
         "log_scale": True,
         "normalization": "zscore",
+        "quantile_lower": 0.05,
+        "quantile_upper": 0.95,
+        "quantile_max_samples_per_channel": 1_000_000,
+        "quantile_values_per_sample": 4096,
         "cache_dir": None,
         "t2_average_indices": None,
         "dwi_average_indices": None,
@@ -110,6 +117,10 @@ def load_config(config_path: str | Path) -> dict[str, Any]:
     features_config["coil_combination"] = str(features_config["coil_combination"]).lower()
     features_config["average_reduction"] = str(features_config["average_reduction"]).lower()
     features_config["normalization"] = str(features_config["normalization"]).lower()
+    modalities = features_config.get("modalities", ["t2", "dwi"])
+    if isinstance(modalities, str):
+        modalities = [modalities]
+    features_config["modalities"] = [str(modality).lower() for modality in modalities]
     features_config["output_size"] = tuple(int(value) for value in features_config["output_size"])
     features_config["kernel_size"] = tuple(int(value) for value in features_config["kernel_size"])
 

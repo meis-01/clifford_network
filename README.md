@@ -8,7 +8,7 @@ Minimal scaffold for a fastMRI prostate classification pipeline with modular dat
 - Namespace-safe ISMRMRD header parsing to avoid brittle XML lookups.
 - A modular T2 reconstruction pipeline built from GRAPPA, padding, inverse FFT, and RSS coil combination.
 - Deterministic volume-wise splitting utilities to avoid slice leakage.
-- A dependency-light `main.py` that can run a synthetic smoke test without dataset access.
+- A dependency-light `main.py` for validating dataset discovery and local YAML configuration.
 
 ## Quick start
 
@@ -23,7 +23,7 @@ If you prefer installing from the raw dependency list instead, you can still use
 After installation, run:
 
 ```powershell
-c:/Users/meisa/Projects/clifford_network/.venv/Scripts/python.exe main.py --smoke-test
+c:/Users/meisa/Projects/clifford_network/.venv/Scripts/python.exe main.py --config configs/default.yaml
 ```
 
 To scan a local dataset tree:
@@ -40,7 +40,7 @@ c:/Users/meisa/Projects/clifford_network/.venv/Scripts/python.exe main.py --conf
 - `src/training`: training and evaluation helpers.
 - `src/experiments`: experiment tracking adapters.
 - `src/visualization`: HoloViews-based plotting helpers.
-- `tests`: unit and integration smoke tests.
+- `tests`: removed, repository focuses on production dataset pipeline.
 
 ## Notes
 

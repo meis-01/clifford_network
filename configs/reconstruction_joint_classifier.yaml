@@ -6,7 +6,9 @@ features:
   coil_combination: sense
   average_reduction: mean
   log_scale: true
-  normalization: zscore
+  normalization: train_quantile
+  quantile_lower: 0.05
+  quantile_upper: 0.95
   cache_dir: temp/reconstruction_channel_cache
   t2_average_indices: null
   dwi_average_indices: null
