@@ -5,10 +5,8 @@ from pathlib import Path
 
 from t2_samples_preparation import T2SliceConfig, generate_t2_slices
 LABEL_CSV_DEFAULT = Path("data/labels/t2_slice_level_labels.csv")
-# DATA_ROOT_DEFAULT = Path("F:\\fastmri_prostate\\T2")
-# OUTPUT_DIR_DEFAULT = Path("F:\\fastmri_prostate\\T2_Slices")
-DATA_ROOT_DEFAULT = Path("data")
-OUTPUT_DIR_DEFAULT = Path("data/output_complex")
+DATA_ROOT_DEFAULT = Path("F:\\fastmri_prostate\\T2")
+OUTPUT_DIR_DEFAULT = Path("F:\\fastmri_prostate\\t2_samples")
 OUTPUT_SIZE_DEFAULT = (320, 320)
 COMPRESSED_COILS_DEFAULT = -1
 KERNEL_SIZE_DEFAULT = (5, 5)
