@@ -22,6 +22,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 def run_evaluation(checkpoint_path: str | Path, split: str, output_dir: str | Path | None, device_name: str) -> None:
     checkpoint_path = Path(checkpoint_path)
+    if not checkpoint_path.exists():
+        raise FileNotFoundError(
+            f"Checkpoint not found: {checkpoint_path}. "
+            "Train first with: python -m src.autoencoder.train --config configs/t2_complex_autoencoder.yaml"
+        )
     checkpoint = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
     config = checkpoint["config"]
     device = resolve_device(device_name)
