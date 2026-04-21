@@ -29,9 +29,14 @@ python -m src.autoencoder.train --config configs/t2_complex_autoencoder.yaml
 ```
 
 The training run writes `best_model.pt`, `last_model.pt`, `history.json`, `summary.json`, and reconstruction-error CSV files to the configured output directory.
+It also writes a verbose log to `train.log` while reporting the same messages to stdout.
+
+Set `training.log_interval` in the config to control batch progress logs. The example config uses `1`, so it logs every batch.
 
 ## Evaluate
 
 ```powershell
 python -m src.autoencoder.evaluate --checkpoint runs/complex_t2_autoencoder/best_model.pt --split test
 ```
+
+Evaluation writes `evaluate_test.log` beside the checkpoint by default, or under `--output-dir` when provided.

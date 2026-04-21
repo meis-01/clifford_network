@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+import logging
 
 import numpy as np
 import pandas as pd
@@ -80,11 +81,21 @@ class ComplexCoilImageDataset(Dataset):
         }
 
 
-def build_dataloaders(config: dict[str, Any]) -> dict[str, DataLoader]:
+def build_dataloaders(config: dict[str, Any], logger: logging.Logger | None = None) -> dict[str, DataLoader]:
     training_config = config["training"]
     loaders: dict[str, DataLoader] = {}
     for split_name in ("train", "val", "test"):
         dataset = ComplexCoilImageDataset(config, split_name)
+        if logger is not None:
+            logger.info(
+                "Discovered %d files for split=%s from features_root=%s split_dir=%s",
+                len(dataset),
+                split_name,
+                config["data"]["features_root"],
+                config["data"]["split_dirs"][split_name],
+            )
+            if len(dataset) > 0:
+                logger.info("First %s sample: %s", split_name, dataset.paths[0])
         loaders[split_name] = DataLoader(
             dataset,
             batch_size=int(training_config["batch_size"]),
@@ -92,4 +103,14 @@ def build_dataloaders(config: dict[str, Any]) -> dict[str, DataLoader]:
             num_workers=int(training_config["num_workers"]),
             pin_memory=torch.cuda.is_available(),
         )
+        if logger is not None:
+            logger.info(
+                "Built %s dataloader: batches=%d batch_size=%d shuffle=%s num_workers=%d pin_memory=%s",
+                split_name,
+                len(loaders[split_name]),
+                int(training_config["batch_size"]),
+                split_name == "train" and len(dataset) > 0,
+                int(training_config["num_workers"]),
+                torch.cuda.is_available(),
+            )
     return loaders

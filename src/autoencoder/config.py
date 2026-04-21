@@ -36,6 +36,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "learning_rate": 2.0e-4,
         "weight_decay": 1.0e-5,
         "grad_clip_norm": 1.0,
+        "log_interval": 1,
         "patience": 10,
         "device": "auto",
         "seed": 7,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +27,9 @@ def run_epoch(
     device: torch.device,
     optimizer: torch.optim.Optimizer | None = None,
     grad_clip_norm: float | None = None,
+    logger: logging.Logger | None = None,
+    phase: str = "epoch",
+    log_interval: int = 0,
 ) -> EpochResult:
     is_train = optimizer is not None
     model.train(is_train)
@@ -34,8 +38,11 @@ def run_epoch(
     total_nmse = 0.0
     total_samples = 0
     rows: list[dict[str, Any]] = []
+    total_batches = len(loader)
+    if logger is not None:
+        logger.info("Starting %s: batches=%d training=%s", phase, total_batches, is_train)
 
-    for batch in loader:
+    for batch_index, batch in enumerate(loader, start=1):
         image = batch["image"].to(device=device, dtype=torch.complex64, non_blocking=True)
         target = batch["target"].to(device=device, dtype=torch.complex64, non_blocking=True)
 
@@ -60,8 +67,31 @@ def run_epoch(
             for path, sample_error in zip(batch["path"], errors.tolist(), strict=False):
                 rows.append({"path": str(path), "mse": float(sample_error)})
 
+        if logger is not None and log_interval > 0 and (batch_index == 1 or batch_index % log_interval == 0 or batch_index == total_batches):
+            running_loss = total_loss / max(total_samples, 1)
+            running_nmse = total_nmse / max(total_samples, 1)
+            logger.info(
+                "%s batch %d/%d: running_loss=%.6f running_nmse=%.6f samples=%d",
+                phase,
+                batch_index,
+                total_batches,
+                running_loss,
+                running_nmse,
+                total_samples,
+            )
+
     if total_samples == 0:
+        if logger is not None:
+            logger.warning("Finished %s with no samples.", phase)
         return EpochResult(loss=float("nan"), nmse=float("nan"), predictions=pd.DataFrame(rows))
+    if logger is not None:
+        logger.info(
+            "Finished %s: loss=%.6f nmse=%.6f samples=%d",
+            phase,
+            total_loss / total_samples,
+            total_nmse / total_samples,
+            total_samples,
+        )
     return EpochResult(
         loss=total_loss / total_samples,
         nmse=total_nmse / total_samples,
