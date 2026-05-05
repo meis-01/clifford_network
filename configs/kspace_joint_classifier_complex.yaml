@@ -32,4 +32,4 @@ training:
   device: auto
   amp: true
   seed: 7
-  output_dir: runs/kspace_complex_classifier
+  output_dir: /home/mad07/Datasets/Prostate MRI/runs/kspace_complex_classifier

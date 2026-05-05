@@ -9,8 +9,8 @@ import yaml
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "data": {
-        "features_root": "F:/fastmri_prostate/t2_samples/features",
-        "manifest_csv": "F:/fastmri_prostate/t2_samples/manifest.csv",
+        "features_root": "/home/mad07/Datasets/Prostate MRI/t2_samples/features",
+        "manifest_csv": "/home/mad07/Datasets/Prostate MRI/t2_samples/manifest.csv",
         "split_dirs": {
             "train": "training",
             "val": "validation",
@@ -40,7 +40,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "patience": 10,
         "device": "auto",
         "seed": 7,
-        "output_dir": "runs/complex_t2_autoencoder",
+        "output_dir": "/home/mad07/Datasets/Prostate MRI/complex_t2_autoencoder",
     },
 }
 

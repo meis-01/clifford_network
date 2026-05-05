@@ -1,6 +1,6 @@
 data:
-  root: data
-  labels_dir: data/labels
+  root: /home/mad07/Datasets/Prostate MRI
+  labels_dir: Datasets/Prostate MRI/labels
 
 splits:
   train_fraction: 0.7

@@ -1,8 +1,8 @@
 data:
-  t2_labels_csv: data/labels/t2_slice_level_labels.csv
-  dwi_labels_csv: data/labels/dwi_slice_level_labels.csv
-  t2_root: data
-  dwi_root: data
+  t2_labels_csv: Datasets/Prostate MRI/labels/t2_slice_level_labels.csv
+  dwi_labels_csv: Datasets/Prostate MRI/labels/dwi_slice_level_labels.csv
+  t2_root: /home/mad07/Datasets/Prostate MRI/fasr_mri
+  dwi_root: /home/mad07/Datasets/Prostate MRI/fasr_mri
   positive_threshold: 2
   allow_label_disagreement: true
   drop_missing: true
@@ -37,4 +37,4 @@ training:
   device: auto
   amp: true
   seed: 7
-  output_dir: runs/kspace_real_classifier
+  output_dir: /home/mad07/Datasets/Prostate MRI/runs/kspace_real_classifier

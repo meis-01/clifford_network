@@ -4,14 +4,14 @@ import argparse
 from pathlib import Path
 
 from t2_samples_preparation import T2SliceConfig, generate_t2_slices
-LABEL_CSV_DEFAULT = Path("data/labels/t2_slice_level_labels.csv")
-DATA_ROOT_DEFAULT = Path("F:\\fastmri_prostate\\T2")
-OUTPUT_DIR_DEFAULT = Path("F:\\fastmri_prostate\\t2_samples")
+LABEL_CSV_DEFAULT = Path("/home/mad07/Datasets/Prostate MRI/labels/t2_slice_level_labels.csv")
+DATA_ROOT_DEFAULT = Path("/home/mad07/Datasets/Prostate MRI/fasr_mri")
+OUTPUT_DIR_DEFAULT = Path("/home/mad07/Datasets/Prostate MRI/t2_samples")
 OUTPUT_SIZE_DEFAULT = (320, 320)
 COMPRESSED_COILS_DEFAULT = -1
 KERNEL_SIZE_DEFAULT = (5, 5)
 POSITIVE_THRESHOLD_DEFAULT = 2.0
-LIMIT_DEFAULT = 1
+LIMIT_DEFAULT = -1
 
 
 def build_parser() -> argparse.ArgumentParser:

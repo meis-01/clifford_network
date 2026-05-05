@@ -28,4 +28,4 @@ training:
   device: auto
   amp: true
   seed: 7
-  output_dir: runs/reconstruction_real_classifier
+  output_dir: /home/mad07/Datasets/Prostate MRI/runs/reconstruction_real_classifier
