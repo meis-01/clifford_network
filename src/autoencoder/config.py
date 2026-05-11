@@ -24,10 +24,12 @@ DEFAULT_CONFIG: dict[str, Any] = {
     },
     "model": {
         "in_channels": 1,
-        "channels": [16, 32, 64, 128],
-        "latent_channels": 128,
+        "channels": [64, 128, 256, 512, 1024, 512],
+        "latent_channels": 512,
         "activation": "modrelu",
         "use_bias": True,
+        "weight_init": "xavier",
+        "image_size": [320, 320],
     },
     "training": {
         "batch_size": 4,

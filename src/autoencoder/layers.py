@@ -12,7 +12,12 @@ class ComplexModReLU(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         magnitude = torch.abs(x)
-        bias = self.bias.view(1, -1, 1, 1)
+        if x.ndim == 4:
+            bias = self.bias.view(1, -1, 1, 1)
+        elif x.ndim == 2:
+            bias = self.bias.view(1, -1)
+        else:
+            raise ValueError(f"Unsupported tensor shape for ComplexModReLU: {x.shape}")
         activated = torch.relu(magnitude + bias)
         return activated * x / magnitude.clamp_min(self.eps)
 
@@ -31,6 +36,24 @@ def build_complex_activation(name: str, channels: int) -> nn.Module:
     if normalized in {"identity", "none"}:
         return nn.Identity()
     raise ValueError(f"Unknown complex activation: {name}")
+
+class ComplexdenseBlock(nn.Module):
+    def __init__(
+        self,
+        in_features: int,
+        out_features: int,
+        *,
+        activation: str,
+        use_bias: bool,
+    ):
+        super().__init__()
+        self.linear = nn.Linear(
+            in_features, out_features, bias=use_bias, dtype=torch.cfloat
+        )
+        self.activation = build_complex_activation(activation, out_features)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.activation(self.linear(x))
 
 
 class ComplexConvBlock(nn.Module):

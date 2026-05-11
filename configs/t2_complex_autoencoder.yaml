@@ -1,6 +1,6 @@
 data:
-  features_root: "F:/fastmri_prostate/t2_samples/features"
-  manifest_csv: "F:/fastmri_prostate/t2_samples/manifest.csv"
+  features_root: "/home/mad07/Datasets/Prostate MRI/t2_samples/features"
+  manifest_csv: "/home/mad07/Datasets/Prostate MRI/t2_samples/manifest.csv"
   split_dirs:
     train: "training"
     val: "validation"
@@ -13,8 +13,8 @@ data:
 
 model:
   in_channels: 1
-  channels: [16, 32, 64, 128]
-  latent_channels: 128
+  channels: [64, 128, 256, 512, 1024, 512]
+  latent_channels: 512
   activation: "modrelu"
   use_bias: true
 
