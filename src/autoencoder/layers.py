@@ -25,7 +25,9 @@ class ComplexModReLU(nn.Module):
 class ComplexCardioid(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return 0.5 * (1.0 + torch.cos(torch.angle(x))) * x
-
+class Complextanh(nn.Module):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return torch.tanh(x.real) + 1j * torch.tanh(x.imag)
 
 def build_complex_activation(name: str, channels: int) -> nn.Module:
     normalized = name.lower()
@@ -33,6 +35,9 @@ def build_complex_activation(name: str, channels: int) -> nn.Module:
         return ComplexModReLU(channels)
     if normalized == "cardioid":
         return ComplexCardioid()
+    
+    if normalized == "complextanh":
+        return Complextanh()
     if normalized in {"identity", "none"}:
         return nn.Identity()
     raise ValueError(f"Unknown complex activation: {name}")

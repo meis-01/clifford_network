@@ -89,12 +89,12 @@ def main():
     parser.add_argument(
         "--activations",
         nargs="+",
-        default=["modrelu", "relu", "zrelu", "tanh"],
+        default=[ "tanh"],
     )
     parser.add_argument(
         "--inits",
         nargs="+",
-        default=["xavier", "he", "unitary", "random"],
+        default=[ "unitary", "trabelsi"],
     )
     parser.add_argument("--device", default="cpu")
     parser.add_argument("--output-dir", default="results")

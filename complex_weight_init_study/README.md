@@ -92,6 +92,13 @@ python train_experiments.py --create-configs
 # Run experiments using YAML config
 python train_experiments.py --config configs/comparison.yaml
 python train_experiments.py --config configs/deep_network.yaml
+python train_experiments.py --config configs/cifar10_fft.yaml
+python train_experiments.py --config configs/mnist_fft.yaml
+python train_experiments.py --config configs/comparison.yaml
+python train_experiments.py --config configs/deep_network.yaml
+python train_experiments.py --config configs/cifar10_fft.yaml
+python train_experiments.py --config configs/mnist_fft.yaml
+python train_experiments.py --config configs/single_experiment.yaml
 ```
 
 ### Available Configuration Files

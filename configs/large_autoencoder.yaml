@@ -14,9 +14,9 @@ data:
 model:
   in_channels: 1
   # Large autoencoder architecture with deep stacking
-  channels: [64, 128, 256, 512, 1024, 512, 256]
-  latent_channels: 1024
-  activation: modrelu
+  channels: [ 1024, 1024,1024,1024,1024,512,512,512,512,512, 256,256, 256,256, 128, 64]
+  latent_channels: 64
+  activation: complextanh
   use_bias: true
   weight_init: xavier  # Will be overridden during comparison training
   image_size: [320, 320]

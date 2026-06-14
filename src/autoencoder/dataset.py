@@ -1,3 +1,15 @@
+"""
+dataset.py  —  patched to support data.max_samples for quick debug runs.
+
+Only change vs original: ComplexCoilImageDataset.__init__ now reads
+config["data"].get("max_samples") and slices self.paths when set.
+
+Everything else (normalisation, loading, DataLoader creation) is identical.
+
+Usage — add to your YAML config:
+    data:
+      max_samples: 50    # cap every split at 50 files; null = use all
+"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -25,8 +37,8 @@ def _split_feature_paths(config: dict[str, Any], split_name: str) -> list[Path]:
         if "data_split" not in manifest or "feature_path" not in manifest:
             raise ValueError("Manifest must contain data_split and feature_path columns.")
         split_manifest = manifest[manifest["data_split"].astype(str) == split_dir]
-        paths = [Path(value) for value in split_manifest["feature_path"].tolist()]
-        return [path for path in paths if path.exists()]
+        paths = [Path(v) for v in split_manifest["feature_path"].tolist()]
+        return [p for p in paths if p.exists()]
 
     return []
 
@@ -59,7 +71,16 @@ class ComplexCoilImageDataset(Dataset):
     def __init__(self, config: dict[str, Any], split_name: str):
         self.config = config
         self.split_name = split_name
-        self.paths = _split_feature_paths(config, split_name)
+        all_paths = _split_feature_paths(config, split_name)
+
+        # ── subset support ────────────────────────────────────────────────
+        max_samples = config["data"].get("max_samples")
+        if max_samples is not None:
+            max_samples = int(max_samples)
+            all_paths = all_paths[:max_samples]
+        # ─────────────────────────────────────────────────────────────────
+
+        self.paths = all_paths
         self.image_size = tuple(config["data"]["image_size"])
         self.normalization = str(config["data"]["normalization"])
         self.eps = float(config["data"]["eps"])
@@ -71,7 +92,9 @@ class ComplexCoilImageDataset(Dataset):
         path = self.paths[index]
         image = _load_complex_npy(path)
         if tuple(image.shape[-2:]) != self.image_size:
-            raise ValueError(f"{path} has image size {tuple(image.shape[-2:])}, expected {self.image_size}")
+            raise ValueError(
+                f"{path} has image size {tuple(image.shape[-2:])}, expected {self.image_size}"
+            )
         image, scale = _normalize(image, self.normalization, self.eps)
         return {
             "image": image,
@@ -81,18 +104,22 @@ class ComplexCoilImageDataset(Dataset):
         }
 
 
-def build_dataloaders(config: dict[str, Any], logger: logging.Logger | None = None) -> dict[str, DataLoader]:
+def build_dataloaders(
+    config: dict[str, Any],
+    logger: logging.Logger | None = None,
+) -> dict[str, DataLoader]:
     training_config = config["training"]
     loaders: dict[str, DataLoader] = {}
     for split_name in ("train", "val", "test"):
         dataset = ComplexCoilImageDataset(config, split_name)
+        max_samples = config["data"].get("max_samples")
         if logger is not None:
+            subset_note = f" (capped at {max_samples})" if max_samples else ""
             logger.info(
-                "Discovered %d files for split=%s from features_root=%s split_dir=%s",
+                "Discovered %d files%s for split=%s",
                 len(dataset),
+                subset_note,
                 split_name,
-                config["data"]["features_root"],
-                config["data"]["split_dirs"][split_name],
             )
             if len(dataset) > 0:
                 logger.info("First %s sample: %s", split_name, dataset.paths[0])
@@ -105,12 +132,9 @@ def build_dataloaders(config: dict[str, Any], logger: logging.Logger | None = No
         )
         if logger is not None:
             logger.info(
-                "Built %s dataloader: batches=%d batch_size=%d shuffle=%s num_workers=%d pin_memory=%s",
+                "Built %s dataloader: batches=%d batch_size=%d",
                 split_name,
                 len(loaders[split_name]),
                 int(training_config["batch_size"]),
-                split_name == "train" and len(dataset) > 0,
-                int(training_config["num_workers"]),
-                torch.cuda.is_available(),
             )
     return loaders

@@ -33,7 +33,7 @@ def mod_tanh(z: torch.Tensor) -> torch.Tensor:
 
 ACTIVATIONS = {
     "relu": complex_relu,
-    "tanh": complex_tanh,
+    "complex_tanh": complex_tanh,
     "zrelu": z_relu,
     "modrelu": mod_relu,
     "modtanh": mod_tanh,
@@ -77,8 +77,9 @@ class ComplexMLP(nn.Module):
         in_features: int,
         hidden_size: int,
         n_layers: int,
-        activation: str = "modrelu",
+        activation: str = "complex_tanh",
         use_output_layer: bool = True,
+        out_features: int | None = None, 
     ):
         super().__init__()
         self.activation_name = activation
@@ -93,7 +94,8 @@ class ComplexMLP(nn.Module):
             self.layers.append(ComplexLinear(hidden_size, hidden_size))
 
         if use_output_layer:
-            self.output_layer = ComplexLinear(hidden_size, hidden_size)
+            output_dim = out_features if out_features is not None else hidden_size
+            self.output_layer = ComplexLinear(hidden_size, output_dim)
         else:
             self.output_layer = None
 

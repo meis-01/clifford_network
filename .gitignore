@@ -206,3 +206,11 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 runs/
+**_results/
+**.gz
+**/data/
+**.png
+**.jpg
+**.jpeg
+**.bmp
+**.log

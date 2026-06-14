@@ -161,8 +161,8 @@ Expected duration: 5-10 hours depending on hardware (GPU recommended)
 ```bash
 # After training completes, run analysis
 python -m src.autoencoder.comparison_analysis \
-    --results-dir runs/weight_init_comparison \
-    --methods random xavier he unitary trabelsi structured_preserve
+ --results-dir runs/weight_init_comparison \
+  --methods  trabelsi structured_preserve
 ```
 
 ### Step 3: Review Results
