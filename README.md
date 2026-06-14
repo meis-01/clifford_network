@@ -19,10 +19,6 @@ python -m clifford_network sweep --config configs/experiments/mnist_fft_init_dep
 python -m clifford_network analyze --results-dir results/runs/synthetic_classification_smoke
 python -m clifford_network report --results-dir results/runs/synthetic_classification_smoke
 ```
-
-Visualization and reporting use HoloViews with the Bokeh backend. Matplotlib is
-not part of the refactored pipeline.
-
 ## Repository Layout
 
 ```text
