@@ -5,24 +5,35 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "clifford-network"
 version = "0.1.0"
-description = "fastMRI prostate reconstruction and modeling scaffold"
-readme = { file = "README.md", content-type = "text/markdown" }
+description = "Reproducible complex-valued neural network initialization experiments"
+readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "bokeh>=3.4",
+    "h5py>=3.10",
+    "holoviews>=1.19",
     "numpy>=2.0",
     "pandas>=2.2",
-    "h5py>=3.10",
     "PyYAML>=6.0",
-    "holoviews>=1.19",
-    "bokeh>=3.4",
     "torch>=2.4",
-    "mlflow>=2.16",
-    "scikit-learn>=1.5",
+    "torchvision>=0.19",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+clifford-network = "clifford_network.cli:main"
+
 [tool.setuptools]
-include-package-data = false
+package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["src*"]
+where = ["src"]
+include = ["clifford_network*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

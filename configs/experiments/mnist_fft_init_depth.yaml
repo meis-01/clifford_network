@@ -1,0 +1,37 @@
+experiment:
+  name: mnist_fft_init_depth
+  task: classification
+  output_dir: results/runs
+
+dataset:
+  name: mnist_fft
+  root: data
+  download: false
+  max_train: null
+  max_eval: null
+
+model:
+  name: complex_mlp
+  hidden_size: 128
+  depths: [4, 8, 16, 32]
+  activation: split_tanh
+
+initialization:
+  methods:
+    - structured_preserve
+    - trabelsi
+    - xavier
+    - he
+
+training:
+  epochs: 100
+  batch_size: 128
+  learning_rate: 0.001
+  optimizer: adam
+  device: auto
+  seeds: [0, 1, 2, 3, 4]
+
+monitoring:
+  enabled: true
+  saturation_threshold: 0.95
+  vanishing_threshold: 0.00001

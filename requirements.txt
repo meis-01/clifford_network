@@ -1,10 +1,8 @@
+bokeh>=3.4
+h5py>=3.10
+holoviews>=1.19
 numpy>=2.0
 pandas>=2.2
-h5py>=3.10
 PyYAML>=6.0
-holoviews>=1.19
-bokeh>=3.4
 torch>=2.4
-mlflow>=2.16
-scikit-image>=0.22
-scikit-learn>=1.5
+torchvision>=0.19
