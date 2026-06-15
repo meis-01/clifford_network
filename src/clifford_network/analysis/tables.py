@@ -1,3 +1,9 @@
+"""CSV table generation for aggregated experiment metrics.
+
+This module extracts final train and validation metrics from histories and saves
+them in a compact table for spreadsheet-style comparison.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -6,6 +12,7 @@ import pandas as pd
 
 
 def save_final_metric_table(history: pd.DataFrame, output_dir: str | Path) -> Path | None:
+    """Write one final-metric row per initialization, depth, and seed."""
     if history.empty:
         return None
     output_path = Path(output_dir)

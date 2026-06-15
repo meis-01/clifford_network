@@ -1,3 +1,9 @@
+"""Structured-preserving complex initialization.
+
+This initializer seeds each output row with a phase-only identity-like path and
+adds small complex Gaussian noise, aiming to preserve signal flow at depth.
+"""
+
 from __future__ import annotations
 
 import math
@@ -14,6 +20,7 @@ def structured_preserve(
     dtype: torch.dtype,
     alpha: float = 0.0085,
 ) -> torch.Tensor:
+    """Create a 2-D structured identity-phase matrix plus small complex noise."""
     if len(shape) != 2:
         raise ValueError(f"structured_preserve supports only 2-D weights, got {shape}.")
 

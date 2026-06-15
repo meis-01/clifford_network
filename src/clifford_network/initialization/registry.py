@@ -1,3 +1,9 @@
+"""Registry and application helpers for complex initializers.
+
+The registry converts config strings into initializer functions and provides
+utilities for copying sampled values into tensors or full model parameters.
+"""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -26,6 +32,7 @@ INITIALIZATION_REGISTRY: dict[str, Initializer] = {
 
 
 def initialize_tensor(tensor: torch.Tensor, method: str, **kwargs: float) -> None:
+    """Fill a complex tensor in-place using the named initializer."""
     method_key = method.lower()
     if method_key not in INITIALIZATION_REGISTRY:
         available = ", ".join(sorted(INITIALIZATION_REGISTRY))
@@ -38,6 +45,7 @@ def initialize_tensor(tensor: torch.Tensor, method: str, **kwargs: float) -> Non
 
 
 def initialize_model(model: torch.nn.Module, method: str, **kwargs: float) -> None:
+    """Initialize complex model weights and zero complex bias vectors."""
     for parameter in model.parameters():
         if not parameter.is_complex():
             continue

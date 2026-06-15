@@ -13,7 +13,7 @@ src/clifford_network/
 ├─ initialization/
 ├─ activations/
 ├─ models/
-├─ data/
+├─ dataset/
 ├─ training/
 ├─ experiments/
 ├─ analysis/

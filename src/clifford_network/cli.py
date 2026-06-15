@@ -1,3 +1,9 @@
+"""Command-line interface for running experiments and producing analysis artifacts.
+
+This module wires the package's main workflows into subcommands: single runs,
+sweeps, aggregate analysis, and Markdown report generation.
+"""
+
 from __future__ import annotations
 
 import argparse
@@ -10,6 +16,7 @@ from clifford_network.experiments.sweep import run_sweep
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Create the top-level parser and register all supported subcommands."""
     parser = argparse.ArgumentParser(prog="clifford-network")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -31,6 +38,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> None:
+    """Parse command-line arguments and dispatch to the requested workflow."""
     parser = build_parser()
     args = parser.parse_args(argv)
 

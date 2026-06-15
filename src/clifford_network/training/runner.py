@@ -1,3 +1,9 @@
+"""Epoch-level training and evaluation loop.
+
+This module executes one dataloader pass, handles gradient updates when an
+optimizer is supplied, accumulates metrics, and gathers optional layer stats.
+"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -12,11 +18,14 @@ from clifford_network.training.monitoring import LayerMonitor
 
 @dataclass
 class EpochResult:
+    """Averaged epoch metrics plus optional layer-monitoring records."""
+
     metrics: dict[str, float]
     layer_records: list[dict]
 
 
 def _move_batch(batch, device: torch.device):
+    """Move an input-target batch onto the selected device."""
     inputs, targets = batch
     return inputs.to(device), targets.to(device)
 
@@ -33,6 +42,7 @@ def run_epoch(
     split: str,
     monitor: LayerMonitor | None,
 ) -> EpochResult:
+    """Run one training or evaluation epoch and return averaged metrics."""
     is_training = optimizer is not None
     model.train(is_training)
     totals: dict[str, float] = {}

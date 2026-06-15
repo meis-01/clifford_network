@@ -1,3 +1,9 @@
+"""Analysis artifact and Markdown report builders.
+
+This module coordinates aggregation, plot generation, and table output, then can
+summarize the generated artifact paths in a lightweight report document.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -8,6 +14,7 @@ from clifford_network.analysis.tables import save_final_metric_table
 
 
 def build_analysis(results_dir: str | Path, output_dir: str | Path | None = None) -> dict[str, str]:
+    """Generate CSV, plot, and table artifacts for a results directory."""
     results_path = Path(results_dir)
     output_path = Path(output_dir) if output_dir is not None else results_path / "analysis"
     output_path.mkdir(parents=True, exist_ok=True)
@@ -36,6 +43,7 @@ def build_analysis(results_dir: str | Path, output_dir: str | Path | None = None
 
 
 def build_markdown_report(results_dir: str | Path, output_dir: str | Path | None = None) -> Path:
+    """Generate analysis artifacts and write a Markdown index of their paths."""
     artifacts = build_analysis(results_dir, output_dir)
     output_path = Path(output_dir) if output_dir is not None else Path(results_dir) / "analysis"
     report_path = output_path / "report.md"

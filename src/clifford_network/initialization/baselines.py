@@ -1,3 +1,9 @@
+"""Baseline complex-valued parameter initializers.
+
+The functions here implement random, Xavier, He, unitary phase, and Trabelsi
+style complex initializers used as comparisons against the structured method.
+"""
+
 from __future__ import annotations
 
 import math
@@ -6,6 +12,7 @@ import torch
 
 
 def complex_fan_in_and_fan_out(shape: tuple[int, ...]) -> tuple[int, int]:
+    """Compute fan-in and fan-out for dense or convolution-like weight shapes."""
     if len(shape) == 2:
         return shape[1], shape[0]
     if len(shape) > 2:
@@ -21,6 +28,7 @@ def complex_normal(
     device: torch.device | None = None,
     dtype: torch.dtype = torch.complex64,
 ) -> torch.Tensor:
+    """Sample a complex normal tensor by drawing real and imaginary parts."""
     if dtype not in (torch.complex64, torch.complex128):
         raise TypeError(f"Expected a complex dtype, got {dtype}.")
     real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
@@ -29,27 +37,32 @@ def complex_normal(
 
 
 def random_complex(shape: tuple[int, ...], *, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
+    """Sample complex normal weights scaled by inverse square root fan-in."""
     fan_in, _ = complex_fan_in_and_fan_out(shape)
     return complex_normal(shape, 1.0 / math.sqrt(max(1, fan_in)), device=device, dtype=dtype)
 
 
 def xavier_complex(shape: tuple[int, ...], *, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
+    """Sample complex Xavier-style weights using fan-in and fan-out."""
     fan_in, fan_out = complex_fan_in_and_fan_out(shape)
     return complex_normal(shape, math.sqrt(2.0 / max(1, fan_in + fan_out)), device=device, dtype=dtype)
 
 
 def he_complex(shape: tuple[int, ...], *, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
+    """Sample complex He-style weights scaled by fan-in."""
     fan_in, _ = complex_fan_in_and_fan_out(shape)
     return complex_normal(shape, math.sqrt(2.0 / max(1, fan_in)), device=device, dtype=dtype)
 
 
 def unitary_phase(shape: tuple[int, ...], *, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
+    """Create unit-magnitude complex weights with uniformly random phases."""
     real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
     phase = torch.rand(shape, device=device, dtype=real_dtype) * (2.0 * math.pi)
     return torch.polar(torch.ones(shape, device=device, dtype=real_dtype), phase).to(dtype)
 
 
 def trabelsi(shape: tuple[int, ...], *, device: torch.device, dtype: torch.dtype) -> torch.Tensor:
+    """Sample weights from the polar complex initialization of Trabelsi et al."""
     fan_in, fan_out = complex_fan_in_and_fan_out(shape)
     real_dtype = torch.float32 if dtype == torch.complex64 else torch.float64
     sigma = math.sqrt(2.0 / max(1, fan_in + fan_out))

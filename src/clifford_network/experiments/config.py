@@ -1,3 +1,9 @@
+"""Configuration loading and sweep expansion.
+
+This module defines default experiment settings, merges YAML overrides into
+those defaults, and expands list-valued sweep knobs into concrete run configs.
+"""
+
 from __future__ import annotations
 
 from copy import deepcopy
@@ -40,6 +46,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
 
 
 def deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    """Recursively merge `override` into a deep copy of `base`."""
     merged = deepcopy(base)
     for key, value in override.items():
         if isinstance(value, dict) and isinstance(merged.get(key), dict):
@@ -50,6 +57,7 @@ def deep_merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]
 
 
 def load_config(path: str | Path) -> dict[str, Any]:
+    """Load a YAML config, apply defaults, and record its resolved path."""
     raw = load_yaml(path)
     config = deep_merge(DEFAULT_CONFIG, raw)
     config["_config_path"] = str(Path(path).resolve())
@@ -57,6 +65,7 @@ def load_config(path: str | Path) -> dict[str, Any]:
 
 
 def as_list(value: Any) -> list[Any]:
+    """Normalize scalar, list, or `None` values into a list."""
     if value is None:
         return []
     if isinstance(value, list):
@@ -65,6 +74,7 @@ def as_list(value: Any) -> list[Any]:
 
 
 def expand_sweep(config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Expand configured initialization methods, depths, and seeds into runs."""
     init_config = config.get("initialization", {})
     model_config = config.get("model", {})
     training_config = config.get("training", {})

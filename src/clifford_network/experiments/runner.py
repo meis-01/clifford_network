@@ -1,3 +1,9 @@
+"""Single-experiment training orchestration.
+
+This module wires together config values, datasets, model construction,
+initialization, optimization, monitoring, and result persistence for one run.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -5,7 +11,7 @@ from typing import Any
 
 import torch
 
-from clifford_network.data import build_dataloaders
+from clifford_network.dataset import build_dataloaders
 from clifford_network.initialization import initialize_model
 from clifford_network.models import build_model
 from clifford_network.training.losses import build_loss
@@ -17,6 +23,7 @@ from clifford_network.utils.seed import set_seed
 
 
 def _run_dir(config: dict[str, Any]) -> Path:
+    """Build the deterministic output directory for a resolved run config."""
     experiment = config["experiment"]
     output_root = Path(experiment.get("output_dir", "results/runs"))
     name = experiment["name"]
@@ -27,6 +34,7 @@ def _run_dir(config: dict[str, Any]) -> Path:
 
 
 def _build_optimizer(config: dict[str, Any], model: torch.nn.Module) -> torch.optim.Optimizer:
+    """Construct the configured optimizer for a model."""
     training = config["training"]
     name = training.get("optimizer", "adam").lower()
     learning_rate = float(training.get("learning_rate", 1.0e-3))
@@ -38,6 +46,7 @@ def _build_optimizer(config: dict[str, Any], model: torch.nn.Module) -> torch.op
 
 
 def run_experiment(config: dict[str, Any]) -> dict[str, Any]:
+    """Run training, validation, testing, and artifact writing for one config."""
     seed = int(config["training"]["seed"])
     set_seed(seed)
     device = resolve_device(config["training"].get("device"))

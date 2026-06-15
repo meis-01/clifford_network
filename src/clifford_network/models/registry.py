@@ -1,3 +1,9 @@
+"""Config-driven model construction.
+
+The registry chooses the appropriate complex model family for the experiment
+task and fills in dimensions discovered from the selected dataset.
+"""
+
 from __future__ import annotations
 
 from torch import nn
@@ -6,6 +12,7 @@ from clifford_network.models.complex_mlp import ComplexMLPAutoencoder, ComplexML
 
 
 def build_model(config: dict, *, input_size: int, num_classes: int | None, task: str, depth: int) -> nn.Module:
+    """Build the configured classifier or autoencoder for a dataset spec."""
     model_config = config.get("model", {})
     name = model_config.get("name", "complex_mlp").lower()
     hidden_size = int(model_config.get("hidden_size", 128))

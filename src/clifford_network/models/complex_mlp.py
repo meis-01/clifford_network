@@ -1,3 +1,9 @@
+"""Complex multilayer perceptron model definitions.
+
+This module provides the classifier and autoencoder architectures used by the
+experiments, assembled from complex linear layers and configurable activations.
+"""
+
 from __future__ import annotations
 
 from collections import OrderedDict
@@ -10,6 +16,8 @@ from clifford_network.models.layers import ComplexLinear
 
 
 class ComplexMLPClassifier(nn.Module):
+    """Complex MLP classifier that returns real logits from a complex network."""
+
     def __init__(
         self,
         input_size: int,
@@ -18,6 +26,7 @@ class ComplexMLPClassifier(nn.Module):
         num_classes: int,
         activation: str,
     ) -> None:
+        """Build a stack of complex hidden layers followed by a complex head."""
         super().__init__()
         if depth < 1:
             raise ValueError("depth must be at least 1.")
@@ -32,13 +41,17 @@ class ComplexMLPClassifier(nn.Module):
         self.network = nn.Sequential(layers)
 
     def forward_complex(self, values: torch.Tensor) -> torch.Tensor:
+        """Return the complex-valued logits before taking the real component."""
         return self.network(values)
 
     def forward(self, values: torch.Tensor) -> torch.Tensor:
+        """Return real-valued logits for classification losses."""
         return self.forward_complex(values).real
 
 
 class ComplexMLPAutoencoder(nn.Module):
+    """Complex MLP autoencoder with configurable encoder and decoder depth."""
+
     def __init__(
         self,
         input_size: int,
@@ -47,6 +60,7 @@ class ComplexMLPAutoencoder(nn.Module):
         activation: str,
         latent_size: int | None = None,
     ) -> None:
+        """Build an encoder-decoder stack that reconstructs complex inputs."""
         super().__init__()
         if depth < 1:
             raise ValueError("depth must be at least 1.")
@@ -73,4 +87,5 @@ class ComplexMLPAutoencoder(nn.Module):
         self.network = nn.Sequential(layers)
 
     def forward(self, values: torch.Tensor) -> torch.Tensor:
+        """Return complex reconstructions for the provided inputs."""
         return self.network(values)

@@ -1,3 +1,9 @@
+"""Interactive plot generation for experiment outputs.
+
+The functions in this module turn aggregated histories and layer statistics into
+small HoloViews/Bokeh HTML artifacts that can be linked from reports.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -9,12 +15,14 @@ hv.extension("bokeh")
 
 
 def _ensure_output_dir(path: str | Path) -> Path:
+    """Create an output directory if needed and return it as a `Path`."""
     output_dir = Path(path)
     output_dir.mkdir(parents=True, exist_ok=True)
     return output_dir
 
 
 def save_training_curves(history: pd.DataFrame, output_dir: str | Path) -> Path | None:
+    """Write validation-loss curves grouped by initialization, depth, and seed."""
     if history.empty:
         return None
 
@@ -36,6 +44,7 @@ def save_training_curves(history: pd.DataFrame, output_dir: str | Path) -> Path 
 
 
 def save_accuracy_curves(history: pd.DataFrame, output_dir: str | Path) -> Path | None:
+    """Write validation-accuracy curves when classification metrics are present."""
     if history.empty or "validation_accuracy" not in history.columns:
         return None
 
@@ -57,6 +66,7 @@ def save_accuracy_curves(history: pd.DataFrame, output_dir: str | Path) -> Path 
 
 
 def save_layer_metric_curves(layer_stats: pd.DataFrame, output_dir: str | Path) -> Path | None:
+    """Write per-layer activation-magnitude curves when layer stats are available."""
     if layer_stats.empty:
         return None
 
