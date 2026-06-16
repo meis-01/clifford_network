@@ -50,25 +50,73 @@ class FFTVisionDataset(Dataset):
         return fft_image.reshape(-1).to(torch.complex64), torch.tensor(label, dtype=torch.long)
 
 
+def _optional_int(value) -> int | None:
+    """Convert optional config values to integers."""
+    return None if value is None else int(value)
+
+
+def _split_train_validation(
+    dataset: Dataset,
+    *,
+    seed: int,
+    validation_samples: int | None,
+    validation_fraction: float,
+    max_train: int | None,
+    max_eval: int | None,
+) -> tuple[Dataset, Dataset]:
+    """Create deterministic, disjoint train and validation subsets."""
+    if len(dataset) < 2:
+        raise ValueError("FFT vision datasets need at least two training samples to create a validation split.")
+
+    if validation_samples is None:
+        if not 0.0 < validation_fraction < 1.0:
+            raise ValueError("validation_fraction must be greater than 0 and less than 1.")
+        validation_count = max(1, int(round(len(dataset) * validation_fraction)))
+    else:
+        validation_count = validation_samples
+
+    if max_eval is not None:
+        validation_count = min(validation_count, max_eval)
+    validation_count = min(validation_count, len(dataset) - 1)
+    if validation_count < 1:
+        raise ValueError("FFT vision validation split is empty.")
+
+    generator = torch.Generator().manual_seed(seed)
+    indices = torch.randperm(len(dataset), generator=generator).tolist()
+    validation_indices = indices[:validation_count]
+    train_indices = indices[validation_count:]
+    if max_train is not None:
+        train_indices = train_indices[:max_train]
+    if not train_indices:
+        raise ValueError("FFT vision training split is empty after applying max_train.")
+
+    return Subset(dataset, train_indices), Subset(dataset, validation_indices)
+
+
 def build_fft_vision_datasets(config: dict, seed: int) -> tuple[Dataset, Dataset, Dataset, int, int]:
     """Build FFT vision train, validation, and test datasets from config."""
-    del seed
     dataset_config = config.get("dataset", {})
     name = dataset_config["name"].lower()
     root = Path(dataset_config.get("root", "data"))
     download = bool(dataset_config.get("download", False))
-    max_train = dataset_config.get("max_train")
-    max_eval = dataset_config.get("max_eval")
+    max_train = _optional_int(dataset_config.get("max_train"))
+    max_eval = _optional_int(dataset_config.get("max_eval"))
+    validation_samples = _optional_int(dataset_config.get("validation_samples"))
+    validation_fraction = float(dataset_config.get("validation_fraction", 0.1))
 
     train_raw = _load_torchvision_dataset(name, root, train=True, download=download)
     test_raw = _load_torchvision_dataset(name, root, train=False, download=download)
 
-    train_dataset = FFTVisionDataset(train_raw, max_items=max_train)
-    # TODO: Split the evaluation data into separate validation and test sets.
-    # Currently both validation_dataset and test_dataset are built from test_raw,
-    # which makes model selection and final evaluation use overlapping data.
-    # Use a deterministic split with the provided seed.
-    validation_dataset = FFTVisionDataset(test_raw, max_items=max_eval)
+    train_subset, validation_subset = _split_train_validation(
+        train_raw,
+        seed=seed,
+        validation_samples=validation_samples,
+        validation_fraction=validation_fraction,
+        max_train=max_train,
+        max_eval=max_eval,
+    )
+    train_dataset = FFTVisionDataset(train_subset)
+    validation_dataset = FFTVisionDataset(validation_subset)
     test_dataset = FFTVisionDataset(test_raw, max_items=max_eval)
 
     sample, _ = train_dataset[0]

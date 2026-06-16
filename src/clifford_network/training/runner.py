@@ -46,11 +46,12 @@ def run_epoch(
     is_training = optimizer is not None
     model.train(is_training)
     totals: dict[str, float] = {}
-    n_batches = 0
+    n_samples = 0
     layer_records: list[dict] = []
 
     for batch_idx, batch in enumerate(dataloader):
         inputs, targets = _move_batch(batch, device)
+        batch_size = int(inputs.shape[0])
         should_monitor = is_training and batch_idx == 0 and monitor is not None
 
         if should_monitor:
@@ -69,7 +70,7 @@ def run_epoch(
 
         metrics = batch_metrics(task, predictions, targets, loss)
         for key, value in metrics.items():
-            totals[key] = totals.get(key, 0.0) + value
-        n_batches += 1
+            totals[key] = totals.get(key, 0.0) + value * batch_size
+        n_samples += batch_size
 
-    return EpochResult(metrics={key: value / max(1, n_batches) for key, value in totals.items()}, layer_records=layer_records)
+    return EpochResult(metrics={key: value / max(1, n_samples) for key, value in totals.items()}, layer_records=layer_records)

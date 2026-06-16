@@ -6,8 +6,11 @@ datasets and returns both PyTorch dataloaders and model-relevant dataset metadat
 
 from __future__ import annotations
 
+import random
 from dataclasses import dataclass
 
+import numpy as np
+import torch
 from torch.utils.data import DataLoader
 
 from clifford_network.dataset.fastmri_t2 import build_fastmri_t2_datasets
@@ -24,15 +27,25 @@ class DataSpec:
     task: str
 
 
-def _loader(dataset, config: dict, shuffle: bool) -> DataLoader:
+def _seed_worker(_worker_id: int) -> None:
+    """Seed Python and NumPy RNGs inside DataLoader workers."""
+    worker_seed = torch.initial_seed() % 2**32
+    random.seed(worker_seed)
+    np.random.seed(worker_seed)
+
+
+def _loader(dataset, config: dict, shuffle: bool, *, seed: int) -> DataLoader:
     """Create a DataLoader using shared training settings from the config."""
     training_config = config.get("training", {})
+    generator = torch.Generator().manual_seed(seed)
     return DataLoader(
         dataset,
         batch_size=int(training_config.get("batch_size", 128)),
         shuffle=shuffle,
         num_workers=int(training_config.get("num_workers", 0)),
         pin_memory=bool(training_config.get("pin_memory", False)),
+        generator=generator,
+        worker_init_fn=_seed_worker,
     )
 
 
@@ -68,7 +81,7 @@ def build_dataloaders(config: dict, *, seed: int) -> tuple[dict[str, DataLoader]
         raise ValueError(f"Experiment task '{task}' does not match dataset task '{spec.task}'.")
 
     return {
-        "train": _loader(train, config, shuffle=True),
-        "validation": _loader(validation, config, shuffle=False),
-        "test": _loader(test, config, shuffle=False),
+        "train": _loader(train, config, shuffle=True, seed=seed),
+        "validation": _loader(validation, config, shuffle=False, seed=seed + 1),
+        "test": _loader(test, config, shuffle=False, seed=seed + 2),
     }, spec
