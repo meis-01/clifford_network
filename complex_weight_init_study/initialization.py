@@ -51,10 +51,10 @@ def init_complex_weights(tensor: torch.Tensor, method: str = "xavier") -> None:
     elif method == "structured_preserve":
         # Structured signal preservation initialization
         # D_{i,j} = e^{iθ} if i ≡ j (mod N_{ℓ-1}) and θ ∈ (−π,π), 0 otherwise
-        # Then W = D + Z where Z_{ij} ∼ N(0, σ_z²) with σ_z = α/√(N_{ℓ-1}), α=0.085
+        # Then W = D + Z where Z_{ij} ∼ N(0, σ_z²) with σ_z = α/√(N_{ℓ-1}), α=0.0085
 
         out_features, in_features = tensor.shape
-        alpha = 0.0085  # empirical value
+        alpha = 0.00085  # empirical value
         sigma_z = alpha / math.sqrt(in_features)
 
         # Initialize D matrix (structured part)
