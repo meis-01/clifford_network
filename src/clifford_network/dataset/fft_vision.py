@@ -64,6 +64,10 @@ def build_fft_vision_datasets(config: dict, seed: int) -> tuple[Dataset, Dataset
     test_raw = _load_torchvision_dataset(name, root, train=False, download=download)
 
     train_dataset = FFTVisionDataset(train_raw, max_items=max_train)
+    # TODO: Split the evaluation data into separate validation and test sets.
+    # Currently both validation_dataset and test_dataset are built from test_raw,
+    # which makes model selection and final evaluation use overlapping data.
+    # Use a deterministic split with the provided seed.
     validation_dataset = FFTVisionDataset(test_raw, max_items=max_eval)
     test_dataset = FFTVisionDataset(test_raw, max_items=max_eval)
 

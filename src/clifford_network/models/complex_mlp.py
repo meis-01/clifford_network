@@ -46,7 +46,7 @@ class ComplexMLPClassifier(nn.Module):
 
     def forward(self, values: torch.Tensor) -> torch.Tensor:
         """Return real-valued logits for classification losses."""
-        return self.forward_complex(values).real
+        return self.forward_complex(values).abs()
 
 
 class ComplexMLPAutoencoder(nn.Module):
