@@ -13,25 +13,25 @@ dataset:
 model:
   name: complex_mlp
   hidden_size: 128
-  depths: [100] #, 8, 16, 32]
+  depths: [10, 100, ,1000,10000]
   activation: split_tanh
 
 initialization:
   methods:
     - structured_preserve
     - trabelsi
-    #- xavier
-    #- he
+    - xavier
+    - he
 
 training:
-  epochs: 2
+  epochs: 100
   batch_size: 128
   learning_rate: 0.001
   optimizer: adam
   device: auto
-  seeds: [0] #[0, 1, 2, 3, 4]
+  seeds: [0] 
 
 monitoring:
   enabled: true
-  saturation_threshold: 0.95
+  saturation_threshold: 0.98
   vanishing_threshold: 0.00001

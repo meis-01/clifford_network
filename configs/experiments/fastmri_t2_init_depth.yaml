@@ -31,5 +31,5 @@ training:
 
 monitoring:
   enabled: true
-  saturation_threshold: 0.95
+  saturation_threshold: 0.98
   vanishing_threshold: 0.00001
