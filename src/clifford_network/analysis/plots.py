@@ -154,5 +154,5 @@ def save_layer_metric_curves(layer_stats: pd.DataFrame, output_dir: str | Path) 
     if not plots:
         return None
 
-    hv.save(hv.Layout(plots).cols(1), output, backend="bokeh")
+    hv.save(hv.Layout(plots).cols(1).opts(shared_axes=False), output, backend="bokeh")
     return output

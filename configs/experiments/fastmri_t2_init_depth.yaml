@@ -5,13 +5,13 @@ experiment:
 
 dataset:
   name: fastmri_t2
-  root: data/fastmri_t2/features
+  root: data
   max_items: null
 
 model:
   name: complex_mlp_autoencoder
   hidden_size: 512
-  depths: [4, 8, 16]
+  depths: [10,100,1000,10000]
   activation: split_tanh
 
 initialization:
@@ -27,7 +27,7 @@ training:
   learning_rate: 0.001
   optimizer: adam
   device: auto
-  seeds: [0, 1, 2, 3, 4]
+  seeds: [0]
 
 monitoring:
   enabled: true
