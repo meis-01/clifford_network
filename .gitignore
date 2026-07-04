@@ -5,11 +5,7 @@ __pycache__/
 .mypy_cache/
 .venv/
 /data/
-results/runs/
-results/aggregated/
-results/figures/
-results/tables/
-results/reports/
+**/results/
 *.pt
 *.pth
 *.ckpt
