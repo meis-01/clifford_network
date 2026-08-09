@@ -27,6 +27,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     },
     "initialization": {
         "method": "structured_preserve",
+        "gain": 1.0,
     },
     "training": {
         "epochs": 10,

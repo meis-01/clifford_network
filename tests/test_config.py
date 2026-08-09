@@ -9,3 +9,4 @@ def test_smoke_config_expands_initialization_depth_seed_grid() -> None:
     assert len(runs) == 4
     assert {run["initialization"]["method"] for run in runs} == {"structured_preserve", "trabelsi"}
     assert {run["model"]["depth"] for run in runs} == {2, 4}
+    assert {run["initialization"]["gain"] for run in runs} == {1.0}

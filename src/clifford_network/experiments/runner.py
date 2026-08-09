@@ -107,11 +107,16 @@ def run_experiment(config: dict[str, Any]) -> dict[str, Any]:
     ).to(device)
     LOGGER.info("Model ready: trainable_parameters=%s", _count_parameters(model))
 
+    initialization = config["initialization"]
+    method = initialization["method"]
     init_kwargs = {}
-    if "alpha" in config["initialization"]:
-        init_kwargs["alpha"] = float(config["initialization"]["alpha"])
-    LOGGER.info("Initializing model: method=%s kwargs=%s", config["initialization"]["method"], init_kwargs or "{}")
-    initialize_model(model, config["initialization"]["method"], **init_kwargs)
+    if method.lower() == "structured_preserve":
+        if "alpha" in initialization:
+            init_kwargs["alpha"] = float(initialization["alpha"])
+        if "gain" in initialization:
+            init_kwargs["gain"] = float(initialization["gain"])
+    LOGGER.info("Initializing model: method=%s kwargs=%s", method, init_kwargs or "{}")
+    initialize_model(model, method, **init_kwargs)
 
     loss_fn = build_loss(task)
     optimizer = _build_optimizer(config, model)

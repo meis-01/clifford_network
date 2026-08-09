@@ -17,6 +17,9 @@ model:
   activation: split_tanh
 
 initialization:
+  # Maximum structured gain, reached linearly at the final complex weight layer.
+  # Set to 1.0 to recover the original initializer at every layer.
+  gain: 1.0
   methods:
     - structured_preserve
     - trabelsi
