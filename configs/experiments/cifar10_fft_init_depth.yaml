@@ -1,7 +1,7 @@
 experiment:
   name: cifar10_fft_init_depth
   task: classification
-  output_dir: results/runs
+  output_dir: results/run/run_gain_1
 
 dataset:
   name: cifar10_fft
@@ -13,10 +13,11 @@ dataset:
 model:
   name: complex_mlp
   hidden_size: 256
-  depths: [10,100,1000,10000]
+  depths: [1000,10000]
   activation: split_tanh
 
 initialization:
+  gain: 1
   methods:
     - structured_preserve
     - trabelsi
@@ -24,12 +25,12 @@ initialization:
     - he
 
 training:
-  epochs: 100
+  epochs: 10
   batch_size: 128
-  learning_rate: 0.001
+  learning_rate: 0.01
   optimizer: adam
   device: auto
-  seeds: [0] 
+  seeds: [0, 1, 2, 3, 4] 
 
 monitoring:
   enabled: true

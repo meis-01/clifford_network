@@ -16,7 +16,9 @@ from torch.utils.data import DataLoader
 from clifford_network.dataset.fastmri_t2 import build_fastmri_t2_datasets
 from clifford_network.dataset.fft_vision import build_fft_vision_datasets
 from clifford_network.dataset.synthetic import SyntheticAutoencoderDataset, SyntheticClassificationDataset
-
+from clifford_network.dataset.function_approximation import (
+    build_function_approximation_datasets,
+)
 
 @dataclass(frozen=True)
 class DataSpec:
@@ -74,6 +76,17 @@ def build_dataloaders(config: dict, *, seed: int) -> tuple[dict[str, DataLoader]
     elif name == "fastmri_t2":
         train, validation, test, input_size, num_classes = build_fastmri_t2_datasets(config)
         spec = DataSpec(input_size=input_size, num_classes=num_classes, task="autoencoder")
+    elif name == "function_approximation":
+        train, validation, test, input_size, output_size = (
+            build_function_approximation_datasets(config, seed)
+        )
+        spec = DataSpec(
+            input_size=input_size,
+            num_classes=None,
+            task="regression",
+        )
+
+
     else:
         raise ValueError(f"Unknown dataset '{name}'.")
 

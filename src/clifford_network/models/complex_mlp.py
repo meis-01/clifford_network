@@ -48,6 +48,61 @@ class ComplexMLPClassifier(nn.Module):
         """Return real-valued logits for classification losses."""
         return self.forward_complex(values).abs()
 
+class ComplexMLPRegressor(nn.Module):
+    """Complex MLP regressor for complex-valued function approximation."""
+
+    def __init__(
+        self,
+        input_size: int,
+        hidden_size: int,
+        depth: int,
+        activation: str,
+        output_size: int = 1,
+    ) -> None:
+        """Build a complex MLP followed by a complex regression head."""
+        super().__init__()
+
+        if depth < 1:
+            raise ValueError("depth must be at least 1.")
+
+        if output_size < 1:
+            raise ValueError("output_size must be at least 1.")
+
+        layers: OrderedDict[str, nn.Module] = OrderedDict()
+
+        in_features = input_size
+
+        for layer_idx in range(depth):
+            layers[f"linear_{layer_idx:03d}"] = ComplexLinear(
+                in_features,
+                hidden_size,
+            )
+
+            layers[f"activation_{layer_idx:03d}"] = build_activation(
+                activation,
+                channels=hidden_size,
+            )
+
+            in_features = hidden_size
+
+        # Complex-valued regression head
+        layers["head"] = ComplexLinear(
+            in_features,
+            output_size,
+        )
+
+        self.network = nn.Sequential(layers)
+
+    def forward(self, values: torch.Tensor) -> torch.Tensor:
+        """Return complex-valued regression predictions."""
+        return self.network(values)
+
+
+
+
+
+
+
 
 class ComplexMLPAutoencoder(nn.Module):
     """Complex MLP autoencoder with configurable encoder and decoder depth."""

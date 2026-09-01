@@ -1,19 +1,24 @@
 experiment:
-  name: mnist_fft_init_depth
-  task: classification
-  output_dir: results/run/run_gain_1
+  name: fourier_function_init_depth
+  task: regression
+  output_dir: results/fourier_function
 
 dataset:
-  name: mnist_fft
-  root: data
-  download: false
-  max_train: null
-  max_eval: null
+  name: function_approximation
+  input_dim: 5
+  n_frequencies: 3
+  train_samples: 20000
+  validation_samples: 5000
+  test_samples: 5000
+  input_low: -1.0
+  input_high: 1.0
+  frequency_low: -3.0
+  frequency_high: 3.0
 
 model:
   name: complex_mlp
-  hidden_size: 128
-  depths: [ 1000,10000]
+  hidden_size: 15
+  depths: [ 50,10 ]
   activation: split_tanh
 
 initialization:
@@ -27,12 +32,13 @@ initialization:
     - he
 
 training:
-  epochs: 10
+  epochs: 30
   batch_size: 128
-  learning_rate: 0.01
+  learning_rate: 0.001
   optimizer: adam
   device: auto
-  seeds: [0, 1, 2, 3, 4] 
+  seeds: [0]
+
 
 monitoring:
   enabled: true

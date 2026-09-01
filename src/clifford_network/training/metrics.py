@@ -22,7 +22,7 @@ def batch_metrics(task: str, prediction: torch.Tensor, target: torch.Tensor, los
             "loss": float(loss.detach().item()),
             "accuracy": classification_accuracy(prediction.detach(), target.detach()),
         }
-    if task == "autoencoder":
+    if task in {"regression", "autoencoder"}:
         return {
             "loss": float(loss.detach().item()),
             "mse": float(loss.detach().item()),

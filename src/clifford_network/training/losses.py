@@ -19,6 +19,6 @@ def build_loss(task: str) -> nn.Module | callable:
     """Return the loss function used for the requested task."""
     if task == "classification":
         return nn.CrossEntropyLoss()
-    if task == "autoencoder":
+    if task in {"autoencoder", "regression"}:
         return complex_mse_loss
     raise ValueError(f"Unsupported task '{task}'.")

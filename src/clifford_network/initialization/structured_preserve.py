@@ -18,7 +18,7 @@ def structured_preserve(
     *,
     device: torch.device,
     dtype: torch.dtype,
-    alpha: float = 0.0085,
+    alpha: float = 1,
     gain: float = 1.0,
 ) -> torch.Tensor:
     """Create a gained structured identity matrix plus small complex noise.

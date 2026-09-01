@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from torch import nn
 
-from clifford_network.models.complex_mlp import ComplexMLPAutoencoder, ComplexMLPClassifier
+from clifford_network.models.complex_mlp import ComplexMLPAutoencoder, ComplexMLPClassifier, ComplexMLPRegressor
 
 
 def build_model(config: dict, *, input_size: int, num_classes: int | None, task: str, depth: int) -> nn.Module:
@@ -29,6 +29,22 @@ def build_model(config: dict, *, input_size: int, num_classes: int | None, task:
             depth=depth,
             num_classes=num_classes,
             activation=activation,
+        )
+    if task == "regression":
+        if name not in {
+            "complex_mlp",
+            "complex_regressor",
+        }:
+            raise ValueError(
+                f"Unsupported regression model '{name}'."
+            )
+
+        return ComplexMLPRegressor(
+            input_size=input_size,
+            hidden_size=hidden_size,
+            depth=depth,
+            activation=activation,
+            output_size=1,
         )
 
     if task == "autoencoder":

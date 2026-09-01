@@ -9,3 +9,5 @@ __pycache__/
 *.pt
 *.pth
 *.ckpt
+**.egg-info/
+**.env/
