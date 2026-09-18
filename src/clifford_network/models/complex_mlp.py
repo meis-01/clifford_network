@@ -57,7 +57,7 @@ class ComplexMLPRegressor(nn.Module):
         hidden_size: int,
         depth: int,
         activation: str,
-        output_size: int = 1,
+        output_size: int = 64,
     ) -> None:
         """Build a complex MLP followed by a complex regression head."""
         super().__init__()
@@ -90,17 +90,16 @@ class ComplexMLPRegressor(nn.Module):
             in_features,
             output_size,
         )
+        # layers["head_activation"] = build_activation(
+        #      activation,
+        #      channels=output_size,
+        # )
 
         self.network = nn.Sequential(layers)
 
     def forward(self, values: torch.Tensor) -> torch.Tensor:
         """Return complex-valued regression predictions."""
         return self.network(values)
-
-
-
-
-
 
 
 

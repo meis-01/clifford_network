@@ -1,0 +1,71 @@
+
+
+
+# ============================================================
+# Complex Nonlinear Channel Equalization
+# ============================================================
+
+task: regression
+
+
+# ============================================================
+# Dataset
+# ============================================================
+
+dataset:
+  name: complex_channel_equalization
+
+  # Number of received complex samples given to the network
+  window: 5
+
+  # Channel noise level
+  snr_db: 20.0
+
+  # Dataset sizes
+  train_samples: 8000
+  validation_samples: 1000
+  test_samples: 1000
+
+
+# ============================================================
+# Model
+# ============================================================
+
+model:
+  name: complex_regressor
+
+  # Complex hidden-layer width
+  hidden_size: 128
+
+  # Complex activation
+  activation: split_tanh
+
+
+# ============================================================
+# Training
+# ============================================================
+
+training:
+  batch_size: 128
+
+  epochs: 30
+
+  learning_rate: 0.001
+
+  optimizer: adam
+
+
+# ============================================================
+# Experiment
+# ============================================================
+
+experiment:
+  seed: 42
+
+  # Change this for depth experiments:
+  
+  # 10000
+  #
+  depth: 100
+
+

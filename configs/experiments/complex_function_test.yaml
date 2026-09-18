@@ -1,30 +1,26 @@
 experiment:
-  name: fourier_function_init_depth
+  name: complex_function_init_depth
   task: regression
-  output_dir: results/fourier_function
+  output_dir: results/complex_function
 
 dataset:
   name: function_approximation
-  input_dim: 5
-  n_frequencies: 3
+
+  input_dim: 64
   train_samples: 20000
   validation_samples: 5000
   test_samples: 5000
   input_low: -1.0
   input_high: 1.0
-  frequency_low: -3.0
-  frequency_high: 3.0
 
 model:
   name: complex_mlp
-  hidden_size: 15
-  depths: [ 50,10 ]
+  hidden_size: 10
+  depths: [10, 500, 10000]
   activation: split_tanh
 
 initialization:
-  # Maximum structured gain, reached linearly at the final complex weight layer.
-  # Set to 1.0 to recover the original initializer at every layer.
-  gain: 1
+  gain: 1.2
   methods:
     - structured_preserve
     - trabelsi
@@ -32,13 +28,12 @@ initialization:
     - he
 
 training:
-  epochs: 30
+  epochs: 50
   batch_size: 128
   learning_rate: 0.001
   optimizer: adam
   device: auto
   seeds: [0]
-
 
 monitoring:
   enabled: true
