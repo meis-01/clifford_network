@@ -57,7 +57,7 @@ class ComplexMLPRegressor(nn.Module):
         hidden_size: int,
         depth: int,
         activation: str,
-        output_size: int = 64,
+        output_size: int = 1,
     ) -> None:
         """Build a complex MLP followed by a complex regression head."""
         super().__init__()
