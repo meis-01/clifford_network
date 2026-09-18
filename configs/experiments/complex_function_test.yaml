@@ -7,16 +7,16 @@ dataset:
   name: function_approximation
 
   input_dim: 64
-  train_samples: 20000
-  validation_samples: 5000
-  test_samples: 5000
+  train_samples: 2000
+  validation_samples: 500
+  test_samples: 100
   input_low: -1.0
   input_high: 1.0
 
 model:
   name: complex_mlp
-  hidden_size: 10
-  depths: [5,10, 20, 30,40,50,60,80,100]
+  hidden_size: 100
+  depths: [5,10,50,100]
   activation: split_tanh
 
 initialization:
@@ -24,8 +24,8 @@ initialization:
   methods:
     - structured_preserve
     - trabelsi
-    - xavier
-    - he
+    # - xavier
+    # - he
 
 training:
   epochs: 50

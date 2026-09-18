@@ -101,6 +101,7 @@ def run_experiment(config: dict[str, Any]) -> dict[str, Any]:
     model = build_model(
         config,
         input_size=data_spec.input_size,
+        output_size=data_spec.input_size ,
         num_classes=data_spec.num_classes,
         task=task,
         depth=int(config["model"]["depth"]),

@@ -11,7 +11,7 @@ from torch import nn
 from clifford_network.models.complex_mlp import ComplexMLPAutoencoder, ComplexMLPClassifier, ComplexMLPRegressor
 
 
-def build_model(config: dict, *, input_size: int, num_classes: int | None, task: str, depth: int) -> nn.Module:
+def build_model(config: dict, *, input_size: int, num_classes: int | None,output_size: int, task: str, depth: int) -> nn.Module:
     """Build the configured classifier or autoencoder for a dataset spec."""
     model_config = config.get("model", {})
     name = model_config.get("name", "complex_mlp").lower()
@@ -44,7 +44,7 @@ def build_model(config: dict, *, input_size: int, num_classes: int | None, task:
             hidden_size=hidden_size,
             depth=depth,
             activation=activation,
-            output_size=1,
+            output_size=output_size,
         )
 
     if task == "autoencoder":
