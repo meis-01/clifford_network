@@ -456,6 +456,9 @@ def save_fixed_layer_alpha_comparison_pdf(
 
         alfa_records = alfa_groups[alfa]
 
+        number_of_nodes = int(alfa_records[0]["hidden_size"])
+        sigma_complex = alfa / np.sqrt(number_of_nodes)
+
         # ----------------------------------------------------
         # Sort layers
         # ----------------------------------------------------
@@ -470,16 +473,15 @@ def save_fixed_layer_alpha_comparison_pdf(
         # ----------------------------------------------------
         # File name
         # ----------------------------------------------------
-
-        if abs(alfa) < 1e-3 or abs(alfa) >= 1e3:
-            alfa_string = f"{alfa:.2e}"
+        if abs(sigma_complex) < 1e-3 or abs(sigma_complex) >= 1e3:
+              sigma_string = f"{sigma_complex:.2e}"
         else:
-            alfa_string = f"{alfa:g}"
+              sigma_string = f"{sigma_complex:g}"
 
         alfa_pdf_path = (
-            output_dir
-            / f"alpha_{alfa_string}.pdf"
-        )
+               output_dir
+                / f"sigma_{sigma_string}.pdf")
+        
 
         # ----------------------------------------------------
         # Create PDF
@@ -603,12 +605,10 @@ def save_fixed_layer_alpha_comparison_pdf(
                 # --------------------------------------------
                 # ONLY ALFA AT TOP
                 # --------------------------------------------
-
                 fig.suptitle(
-                    rf"$\alpha={alfa:g}$",
-                    fontsize=14,
-                    y=0.98,
-                )
+                   rf"$\sigma_{{\mathrm{{complex}}}}={sigma_complex:g}$",
+                   fontsize=14,y=0.98,)
+                
 
                 # --------------------------------------------
                 # Layout

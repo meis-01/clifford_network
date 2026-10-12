@@ -583,7 +583,7 @@ If you only want to investigate layer 9000:
         --num-samples 3000 \
         --batch-size 3000 \
         --layers 9000 \
-        --alfa-values 1e-5 1e-3 0.0085 0.1 1 10 \
+        --alfa-values  0.2  \
         --seed 0
 
 

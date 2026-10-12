@@ -90,6 +90,7 @@ class ClassificationSpec:
     label: str
     input_size: int
     num_classes: int = 10
+    output_size: int = 10
 
 
 DATASET_SPECS: dict[str, ClassificationSpec] = {
@@ -195,6 +196,7 @@ def _build_classifier(
         num_classes=spec.num_classes,
         task="classification",
         depth=config.depth,
+        output_size=10,
     )
 
 
