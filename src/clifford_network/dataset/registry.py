@@ -70,7 +70,7 @@ def build_dataloaders(config: dict, *, seed: int) -> tuple[dict[str, DataLoader]
         validation = SyntheticAutoencoderDataset(int(dataset_config.get("validation_samples", 128)), input_size, seed + 1)
         test = SyntheticAutoencoderDataset(int(dataset_config.get("test_samples", 128)), input_size, seed + 2)
         spec = DataSpec(input_size=input_size, num_classes=None, task="autoencoder")
-    elif name in {"mnist_fft", "cifar10_fft"}:
+    elif name in {"mnist_fft", "fashion_mnist_fft", "cifar10_fft", "cifar100_fft"}:
         train, validation, test, input_size, num_classes = build_fft_vision_datasets(config, seed)
         spec = DataSpec(input_size=input_size, num_classes=num_classes, task="classification")
     elif name == "fastmri_t2":

@@ -9,7 +9,9 @@ standard baselines included for context. The intended paper experiments cover:
 
 - fastMRI T2 complex autoencoder reconstruction
 - MNIST FFT classification
+- Fashion-MNIST FFT classification
 - CIFAR10 FFT classification
+- CIFAR100 FFT classification
 
 All experiments are driven through one CLI:
 
@@ -25,7 +27,7 @@ python -m clifford_network report --results-dir results/runs/synthetic_classific
 src/clifford_network/
 ├─ activations/       # complex activation modules and registry
 ├─ analysis/          # HoloViews/Bokeh plots, aggregation, tables, reports
-├─ dataset/           # dataset adapters: synthetic, MNIST FFT, CIFAR10 FFT, fastMRI T2
+├─ dataset/           # dataset adapters: synthetic, FFT vision, fastMRI T2
 ├─ experiments/       # config loading, single-run and sweep orchestration
 ├─ initialization/    # shared complex initialization methods
 ├─ models/            # shared complex layers, MLPs, and autoencoder MLP
