@@ -12,7 +12,7 @@ import torch
 from torch import nn
 
 from clifford_network.activations import build_activation
-from clifford_network.models.layers import ComplexLinear
+from clifford_network.models.layers import ComplexLinear, ComplexBatchNorm
 
 
 class ComplexMLPClassifier(nn.Module):
@@ -143,3 +143,64 @@ class ComplexMLPAutoencoder(nn.Module):
     def forward(self, values: torch.Tensor) -> torch.Tensor:
         """Return complex reconstructions for the provided inputs."""
         return self.network(values)
+
+
+"ComplexMLPClassifierWithBatchNorm that applies ComplexBatchNorm after "
+"every 5 hidden layers, before the activation of the fifth layer. "
+"The final classification head remains unchanged."
+"For example, with depth 20,"
+" batch normalization is applied after hidden layers 5, 10, 15, and 20."
+
+
+
+class ComplexMLPClassifierWithBatchNorm(nn.Module):
+    """Complex MLP classifier with batch normalization every 5 hidden layers."""
+
+    def __init__(
+        self,
+        input_size: int,
+        hidden_size: int,
+        depth: int,
+        num_classes: int,
+        activation: str,
+        batch_norm_interval: int = 5,
+    ) -> None:
+        """Build complex hidden layers with periodic batch normalization."""
+        super().__init__()
+
+        if depth < 1:
+            raise ValueError("depth must be at least 1.")
+        if batch_norm_interval < 1:
+            raise ValueError("batch_norm_interval must be at least 1.")
+
+        layers: OrderedDict[str, nn.Module] = OrderedDict()
+        in_features = input_size
+
+        for layer_idx in range(depth):
+            layers[f"linear_{layer_idx:03d}"] = ComplexLinear(
+                in_features, hidden_size
+            )
+
+            # Normalize after every Nth hidden linear layer,
+            # before applying that layer's activation.
+            if (layer_idx + 1) % batch_norm_interval == 0:
+                layers[f"batch_norm_{layer_idx:03d}"] = ComplexBatchNorm(
+                    hidden_size
+                )
+
+            layers[f"activation_{layer_idx:03d}"] = build_activation(
+                activation, channels=hidden_size
+            )
+
+            in_features = hidden_size
+
+        layers["head"] = ComplexLinear(in_features, num_classes)
+        self.network = nn.Sequential(layers)
+
+    def forward_complex(self, values: torch.Tensor) -> torch.Tensor:
+        """Return complex-valued logits before converting to real scores."""
+        return self.network(values)
+
+    def forward(self, values: torch.Tensor) -> torch.Tensor:
+        """Return real-valued logits for classification."""
+        return self.forward_complex(values).abs()

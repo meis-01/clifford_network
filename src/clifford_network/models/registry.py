@@ -8,7 +8,12 @@ from __future__ import annotations
 
 from torch import nn
 
-from clifford_network.models.complex_mlp import ComplexMLPAutoencoder, ComplexMLPClassifier, ComplexMLPRegressor
+from clifford_network.models.complex_mlp import (
+    ComplexMLPAutoencoder,
+    ComplexMLPClassifier,
+    ComplexMLPRegressor,
+    ComplexMLPClassifierWithBatchNorm,
+)
 
 
 def build_model(config: dict, *, input_size: int, num_classes: int | None,output_size: int, task: str, depth: int) -> nn.Module:
@@ -19,10 +24,25 @@ def build_model(config: dict, *, input_size: int, num_classes: int | None,output
     activation = model_config.get("activation", "split_tanh")
 
     if task == "classification":
-        if name not in {"complex_mlp", "complex_classifier"}:
+        if name not in {
+            "complex_mlp", 
+            "complex_classifier",
+            "complex_mlp_batchnorm",
+            "complex_classifier_batchnorm"}:
             raise ValueError(f"Unsupported classification model '{name}'.")
         if num_classes is None:
             raise ValueError("Classification models require num_classes.")
+        if name in {"complex_mlp_batchnorm", "complex_classifier_batchnorm",}:
+            
+            return ComplexMLPClassifierWithBatchNorm(
+                input_size=input_size,
+                hidden_size=hidden_size,
+                depth=depth,
+                num_classes=num_classes,
+                activation=activation,
+                batch_norm_interval=int(
+                    model_config.get("batch_norm_interval", 5)
+                ))
         return ComplexMLPClassifier(
             input_size=input_size,
             hidden_size=hidden_size,
